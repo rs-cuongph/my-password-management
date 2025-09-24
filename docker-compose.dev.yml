@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: vibe-kanban-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-vibe_kanban_dev}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./database/seeds:/seeds:ro
+    networks:
+      - vibe-kanban-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-vibe_kanban_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: vibe-kanban-redis-dev
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vibe-kanban-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Backend
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: vibe-kanban-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-vibe_kanban_dev}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key}
+      PORT: 3000
+    ports:
+      - "${BACKEND_PORT:-3001}:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vibe-kanban-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: vibe-kanban-frontend-dev
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-3001}
+      - REACT_APP_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - vibe-kanban-network
+    stdin_open: true
+    tty: true
+
+  # Development Tools Container
+  devtools:
+    image: node:20-alpine
+    container_name: vibe-kanban-devtools
+    restart: "no"
+    volumes:
+      - ./:/workspace
+      - /workspace/node_modules
+    working_dir: /workspace
+    networks:
+      - vibe-kanban-network
+    profiles:
+      - tools
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  vibe-kanban-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
