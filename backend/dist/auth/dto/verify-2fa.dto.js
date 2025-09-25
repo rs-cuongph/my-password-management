@@ -9,32 +9,28 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegisterDto = void 0;
+exports.Verify2faResponseDto = exports.Verify2faDto = void 0;
 const class_validator_1 = require("class-validator");
-class RegisterDto {
-    username;
-    email;
-    password;
+class Verify2faDto {
+    tempToken;
+    totpCode;
 }
-exports.RegisterDto = RegisterDto;
+exports.Verify2faDto = Verify2faDto;
 __decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'Temp token is required' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.MinLength)(3),
     __metadata("design:type", String)
-], RegisterDto.prototype, "username", void 0);
+], Verify2faDto.prototype, "tempToken", void 0);
 __decorate([
-    (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], RegisterDto.prototype, "email", void 0);
-__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'TOTP code is required' }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.MinLength)(8),
-    (0, class_validator_1.Matches)(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-        message: 'Password phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số/ký tự đặc biệt',
-    }),
+    (0, class_validator_1.Length)(6, 6, { message: 'TOTP code must be exactly 6 digits' }),
     __metadata("design:type", String)
-], RegisterDto.prototype, "password", void 0);
-//# sourceMappingURL=register.dto.js.map
+], Verify2faDto.prototype, "totpCode", void 0);
+class Verify2faResponseDto {
+    success;
+    accessToken;
+    message;
+}
+exports.Verify2faResponseDto = Verify2faResponseDto;
+//# sourceMappingURL=verify-2fa.dto.js.map

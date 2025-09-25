@@ -5,18 +5,25 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
+import { Setup2faDto, Setup2faResponseDto } from './dto/setup-2fa.dto';
+import { Verify2faDto, Verify2faResponseDto } from './dto/verify-2fa.dto';
+import { EncryptionUtil } from './utils/encryption.util';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import * as speakeasy from 'speakeasy';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
@@ -139,6 +146,152 @@ export class AuthService {
       // Log error for debugging but don't expose internal details
       console.error('Login error:', error);
       throw new BadRequestException('Đã xảy ra lỗi trong quá trình đăng nhập');
+    }
+  }
+
+  async setup2fa(setup2faDto: Setup2faDto): Promise<Setup2faResponseDto> {
+    const { tempToken } = setup2faDto;
+
+    try {
+      // Verify temp token
+      const payload = this.jwtService.verify(tempToken);
+      if (payload.type !== 'temp') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      // Get user
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, username: true, email: true, totpSecret: true },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Check if 2FA is already enabled
+      if (user.totpSecret) {
+        return {
+          success: false,
+          otpauthUri: '',
+          message: '2FA đã được kích hoạt cho tài khoản này',
+        };
+      }
+
+      // Generate TOTP secret
+      const secret = speakeasy.generateSecret({
+        name: `Vibe Kanban (${user.username})`,
+        issuer: 'Vibe Kanban',
+        length: 32,
+      });
+
+      // Encrypt the secret
+      const encryptionKey = this.configService.get<string>('TOTP_ENCRYPTION_KEY');
+      if (!encryptionKey) {
+        throw new BadRequestException('TOTP encryption key not configured');
+      }
+
+      const encryptedSecret = EncryptionUtil.encrypt(secret.base32, encryptionKey);
+
+      // Store encrypted secret in database
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { totpSecret: encryptedSecret },
+      });
+
+      // Generate QR code
+      const qrCodeDataURL = await QRCode.toDataURL(secret.otpauth_url);
+
+      return {
+        success: true,
+        otpauthUri: secret.otpauth_url,
+        qrCode: qrCodeDataURL,
+        message: 'TOTP secret generated successfully',
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Setup 2FA error:', error);
+      throw new BadRequestException('Đã xảy ra lỗi trong quá trình thiết lập 2FA');
+    }
+  }
+
+  async verify2fa(verify2faDto: Verify2faDto): Promise<Verify2faResponseDto> {
+    const { tempToken, totpCode } = verify2faDto;
+
+    try {
+      // Verify temp token
+      const payload = this.jwtService.verify(tempToken);
+      if (payload.type !== 'temp') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      // Get user with encrypted TOTP secret
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, username: true, totpSecret: true },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (!user.totpSecret) {
+        throw new BadRequestException('2FA chưa được thiết lập');
+      }
+
+      // Decrypt TOTP secret
+      const encryptionKey = this.configService.get<string>('TOTP_ENCRYPTION_KEY');
+      if (!encryptionKey) {
+        throw new BadRequestException('TOTP encryption key not configured');
+      }
+
+      const decryptedSecret = EncryptionUtil.decrypt(user.totpSecret, encryptionKey);
+
+      // Verify TOTP code
+      const verified = speakeasy.totp.verify({
+        secret: decryptedSecret,
+        encoding: 'base32',
+        token: totpCode,
+        window: 2, // Allow 2 time steps tolerance
+      });
+
+      if (!verified) {
+        return {
+          success: false,
+          message: 'Mã TOTP không chính xác',
+        };
+      }
+
+      // Enable 2FA and generate access token
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { need2fa: true },
+      });
+
+      // Generate access token with 1 hour TTL
+      const accessTokenPayload = {
+        sub: user.id,
+        username: user.username,
+        type: 'access',
+      };
+
+      const accessToken = this.jwtService.sign(accessTokenPayload, {
+        expiresIn: '1h',
+      });
+
+      return {
+        success: true,
+        accessToken,
+        message: '2FA đã được kích hoạt thành công',
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Verify 2FA error:', error);
+      throw new BadRequestException('Đã xảy ra lỗi trong quá trình xác thực 2FA');
     }
   }
 }

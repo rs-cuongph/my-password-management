@@ -18,6 +18,8 @@ const throttler_1 = require("@nestjs/throttler");
 const auth_service_1 = require("./auth.service");
 const register_dto_1 = require("./dto/register.dto");
 const login_dto_1 = require("./dto/login.dto");
+const setup_2fa_dto_1 = require("./dto/setup-2fa.dto");
+const verify_2fa_dto_1 = require("./dto/verify-2fa.dto");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -28,6 +30,12 @@ let AuthController = class AuthController {
     }
     async login(loginDto) {
         return this.authService.login(loginDto);
+    }
+    async setup2fa(setup2faDto) {
+        return this.authService.setup2fa(setup2faDto);
+    }
+    async verify2fa(verify2faDto) {
+        return this.authService.verify2fa(verify2faDto);
     }
 };
 exports.AuthController = AuthController;
@@ -48,6 +56,24 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('setup-2fa'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ default: { limit: 3, ttl: 300000 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [setup_2fa_dto_1.Setup2faDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "setup2fa", null);
+__decorate([
+    (0, common_1.Post)('verify-2fa'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60000 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [verify_2fa_dto_1.Verify2faDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verify2fa", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

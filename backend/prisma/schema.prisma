@@ -21,6 +21,7 @@ model User {
   kdfSalt      String   // Random salt for client-side key derivation
   name         String?
   need2fa      Boolean  @default(false)
+  totpSecret   String?  // Encrypted TOTP secret (AES-GCM encrypted)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
