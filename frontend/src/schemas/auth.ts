@@ -102,8 +102,32 @@ export const ChangePasswordWithConfirmSchema = v.pipe(
   )
 );
 
+// TOTP Setup schema
+export const TOTPSetupSchema = v.object({
+  tempToken: v.pipe(
+    v.string('Token tạm thời là bắt buộc'),
+    v.nonEmpty('Token tạm thời không được để trống')
+  ),
+});
+
+// TOTP Verification schema
+export const TOTPVerificationSchema = v.object({
+  tempToken: v.pipe(
+    v.string('Token tạm thời là bắt buộc'),
+    v.nonEmpty('Token tạm thời không được để trống')
+  ),
+  totpCode: v.pipe(
+    v.string('Mã TOTP là bắt buộc'),
+    v.nonEmpty('Mã TOTP không được để trống'),
+    v.length(6, 'Mã TOTP phải có đúng 6 chữ số'),
+    v.regex(/^\d{6}$/, 'Mã TOTP chỉ được chứa số')
+  ),
+});
+
 // Type exports
 export type LoginInput = v.InferInput<typeof LoginSchema>;
 export type RegisterInput = v.InferInput<typeof RegisterWithConfirmSchema>;
 export type UserProfileInput = v.InferInput<typeof UserProfileSchema>;
 export type ChangePasswordInput = v.InferInput<typeof ChangePasswordWithConfirmSchema>;
+export type TOTPSetupInput = v.InferInput<typeof TOTPSetupSchema>;
+export type TOTPVerificationInput = v.InferInput<typeof TOTPVerificationSchema>;

@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TotpVerificationRouteImport } from './routes/totp-verification'
+import { Route as TotpSetupRouteImport } from './routes/totp-setup'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TotpVerificationRoute = TotpVerificationRouteImport.update({
+  id: '/totp-verification',
+  path: '/totp-verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TotpSetupRoute = TotpSetupRouteImport.update({
+  id: '/totp-setup',
+  path: '/totp-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,78 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/totp-setup': typeof TotpSetupRoute
+  '/totp-verification': typeof TotpVerificationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/totp-setup': typeof TotpSetupRoute
+  '/totp-verification': typeof TotpVerificationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/totp-setup': typeof TotpSetupRoute
+  '/totp-verification': typeof TotpVerificationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/login' | '/register' | '/totp-setup' | '/totp-verification'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/login' | '/register' | '/totp-setup' | '/totp-verification'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/totp-setup'
+    | '/totp-verification'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+  TotpSetupRoute: typeof TotpSetupRoute
+  TotpVerificationRoute: typeof TotpVerificationRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/totp-verification': {
+      id: '/totp-verification'
+      path: '/totp-verification'
+      fullPath: '/totp-verification'
+      preLoaderRoute: typeof TotpVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/totp-setup': {
+      id: '/totp-setup'
+      path: '/totp-setup'
+      fullPath: '/totp-setup'
+      preLoaderRoute: typeof TotpSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +127,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
+  TotpSetupRoute: TotpSetupRoute,
+  TotpVerificationRoute: TotpVerificationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

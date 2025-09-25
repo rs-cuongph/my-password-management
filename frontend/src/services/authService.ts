@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from './api';
 import { useAuthStore } from '../stores/authStore';
-import type { LoginInput, RegisterInput, UserProfileInput } from '../schemas/auth';
+import type { LoginInput, RegisterInput, UserProfileInput, TOTPSetupInput, TOTPVerificationInput } from '../schemas/auth';
 import type { User, ApiResponse } from '../types';
 
 // Query keys
@@ -23,6 +23,19 @@ interface RegisterResponse {
   message: string;
 }
 
+interface TOTPSetupResponse {
+  success: boolean;
+  otpauthUri: string;
+  qrCode?: string;
+  message?: string;
+}
+
+interface TOTPVerificationResponse {
+  success: boolean;
+  accessToken?: string;
+  message?: string;
+}
+
 // API functions
 const authApi = {
   login: (data: LoginInput): Promise<ApiResponse<LoginResponse>> =>
@@ -42,6 +55,12 @@ const authApi = {
 
   refreshToken: (refreshToken: string): Promise<ApiResponse<{ access_token: string }>> =>
     apiService.post('/auth/refresh', { refresh_token: refreshToken }),
+
+  setupTOTP: (data: TOTPSetupInput): Promise<ApiResponse<TOTPSetupResponse>> =>
+    apiService.post('/auth/setup-2fa', data),
+
+  verifyTOTP: (data: TOTPVerificationInput): Promise<ApiResponse<TOTPVerificationResponse>> =>
+    apiService.post('/auth/verify-2fa', data),
 };
 
 // Custom hooks
@@ -158,6 +177,37 @@ export const useRefreshToken = () => {
       logout();
       queryClient.clear();
       window.location.href = '/login';
+    },
+  });
+};
+
+export const useSetupTOTP = () => {
+  return useMutation({
+    mutationFn: authApi.setupTOTP,
+    onError: (error) => {
+      console.error('TOTP setup failed:', error);
+    },
+  });
+};
+
+export const useVerifyTOTP = () => {
+  const queryClient = useQueryClient();
+  const { login } = useAuthStore();
+
+  return useMutation({
+    mutationFn: authApi.verifyTOTP,
+    onSuccess: (response) => {
+      if (response.data.success && response.data.accessToken) {
+        // Get user from store or make API call to get user info
+        const { user } = useAuthStore.getState();
+        if (user) {
+          login(user, response.data.accessToken);
+          queryClient.invalidateQueries({ queryKey: authKeys.all });
+        }
+      }
+    },
+    onError: (error) => {
+      console.error('TOTP verification failed:', error);
     },
   });
 };
