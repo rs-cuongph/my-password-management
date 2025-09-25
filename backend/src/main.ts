@@ -2,29 +2,26 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import helmet from 'helmet';
+import cors from 'cors';
+import { SecurityService } from './security/security.service';
+import { SecurityExceptionFilter } from './common/filters/security-exception.filter';
+import { SecurityValidationPipe } from './common/pipes/security-validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const securityService = app.get(SecurityService);
 
-  // Global validation pipe with security options
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strip unknown properties
-      forbidNonWhitelisted: true, // Throw error for unknown properties
-      transform: true, // Auto transform payloads
-      disableErrorMessages: process.env.NODE_ENV === 'production',
-    }),
-  );
+  // Security middleware
+  app.use(helmet(securityService.getHelmetConfig()));
+  app.use(cors(securityService.getCorsConfig()));
 
-  // Enable CORS if configured
-  if (configService.get<boolean>('CORS_ENABLED')) {
-    app.enableCors({
-      origin: configService.get<string>('CORS_ORIGIN'),
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      credentials: true,
-    });
-  }
+  // Global exception filter
+  app.useGlobalFilters(new SecurityExceptionFilter());
+
+  // Global validation pipe with enhanced security
+  app.useGlobalPipes(new SecurityValidationPipe());
 
   // Set global prefix
   const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
@@ -37,5 +34,6 @@ async function bootstrap() {
   console.log(
     `🚀 Application is running on: http://localhost:${port}/${apiPrefix}/${apiVersion}`,
   );
+  console.log(`🔒 Security middleware enabled`);
 }
 void bootstrap();

@@ -7,6 +7,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { AuthModule } from './auth/auth.module';
+import { SecurityModule } from './security/security.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { CustomRateLimitGuard } from './common/guards/custom-rate-limit.guard';
 
 @Module({
   imports: [
@@ -29,8 +32,14 @@ import { AuthModule } from './auth/auth.module';
         ttl: 60000, // 1 minute
         limit: 100, // 100 requests per minute
       },
+      {
+        name: 'sensitive',
+        ttl: 15 * 60 * 1000, // 15 minutes
+        limit: 5, // 5 requests per 15 minutes for sensitive operations
+      },
     ]),
     AuthModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [
@@ -43,6 +52,14 @@ import { AuthModule } from './auth/auth.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomRateLimitGuard,
     },
   ],
 })
