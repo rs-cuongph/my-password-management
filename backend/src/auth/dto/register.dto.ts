@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -14,7 +20,8 @@ export class RegisterDto {
   @IsNotEmpty()
   @MinLength(8)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'Password phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số/ký tự đặc biệt'
+    message:
+      'Password phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số/ký tự đặc biệt',
   })
   password: string;
 }

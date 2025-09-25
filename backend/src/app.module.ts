@@ -21,7 +21,7 @@ import { AuthModule } from './auth/auth.module';
       },
       {
         name: 'medium',
-        ttl: 10000, // 10 seconds  
+        ttl: 10000, // 10 seconds
         limit: 20, // 20 requests per 10 seconds
       },
       {

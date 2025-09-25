@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -20,11 +25,8 @@ export class AuthService {
     // Check if username or email already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email }
-        ]
-      }
+        OR: [{ username }, { email }],
+      },
     });
 
     if (existingUser) {
@@ -49,13 +51,13 @@ export class AuthService {
         username,
         email,
         password: hashedPassword,
-        kdfSalt
-      }
+        kdfSalt,
+      },
     });
 
     return {
       userId: user.id,
-      kdfSalt: user.kdfSalt
+      kdfSalt: user.kdfSalt,
     };
   }
 
@@ -73,11 +75,12 @@ export class AuthService {
           kdfSalt: true,
           need2fa: true,
           isActive: true,
-        }
+        },
       });
 
       // Generic error message for security
-      const invalidCredentialsMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác';
+      const invalidCredentialsMessage =
+        'Tên đăng nhập hoặc mật khẩu không chính xác';
 
       if (!user) {
         return {
@@ -125,12 +128,11 @@ export class AuthService {
         need2fa: user.need2fa,
         kdfSalt: user.kdfSalt,
       };
-
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      
+
       // Log error for debugging but don't expose internal details
       console.error('Login error:', error);
       throw new BadRequestException('Đã xảy ra lỗi trong quá trình đăng nhập');
