@@ -88,7 +88,7 @@ export class AuthService {
           need2fa: false,
           kdfSalt: '',
           message: invalidCredentialsMessage,
-        };
+        } as LoginResponseDto;
       }
 
       if (!user.isActive) {
@@ -97,18 +97,21 @@ export class AuthService {
           need2fa: false,
           kdfSalt: '',
           message: 'Tài khoản đã bị vô hiệu hóa',
-        };
+        } as LoginResponseDto;
       }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.password as string,
+      );
       if (!isPasswordValid) {
         return {
           success: false,
           need2fa: false,
           kdfSalt: '',
           message: invalidCredentialsMessage,
-        };
+        } as LoginResponseDto;
       }
 
       // Generate temporary token for session (valid for 15 minutes)
@@ -127,7 +130,7 @@ export class AuthService {
         tempToken,
         need2fa: user.need2fa,
         kdfSalt: user.kdfSalt,
-      };
+      } as LoginResponseDto;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
