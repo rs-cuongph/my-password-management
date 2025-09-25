@@ -1,13 +1,18 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     const { username, email, password } = registerDto;
@@ -52,5 +57,83 @@ export class AuthService {
       userId: user.id,
       kdfSalt: user.kdfSalt
     };
+  }
+
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+    const { username, password } = loginDto;
+
+    try {
+      // Find user by username
+      const user = await this.prisma.user.findUnique({
+        where: { username },
+        select: {
+          id: true,
+          username: true,
+          password: true,
+          kdfSalt: true,
+          need2fa: true,
+          isActive: true,
+        }
+      });
+
+      // Generic error message for security
+      const invalidCredentialsMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác';
+
+      if (!user) {
+        return {
+          success: false,
+          need2fa: false,
+          kdfSalt: '',
+          message: invalidCredentialsMessage,
+        };
+      }
+
+      if (!user.isActive) {
+        return {
+          success: false,
+          need2fa: false,
+          kdfSalt: '',
+          message: 'Tài khoản đã bị vô hiệu hóa',
+        };
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          need2fa: false,
+          kdfSalt: '',
+          message: invalidCredentialsMessage,
+        };
+      }
+
+      // Generate temporary token for session (valid for 15 minutes)
+      const tempTokenPayload = {
+        sub: user.id,
+        username: user.username,
+        type: 'temp',
+      };
+
+      const tempToken = this.jwtService.sign(tempTokenPayload, {
+        expiresIn: '15m',
+      });
+
+      return {
+        success: true,
+        tempToken,
+        need2fa: user.need2fa,
+        kdfSalt: user.kdfSalt,
+      };
+
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      
+      // Log error for debugging but don't expose internal details
+      console.error('Login error:', error);
+      throw new BadRequestException('Đã xảy ra lỗi trong quá trình đăng nhập');
+    }
   }
 }

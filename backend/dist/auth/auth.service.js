@@ -41,8 +41,6 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var AuthService_1;
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
@@ -50,10 +48,9 @@ const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
 const bcrypt = __importStar(require("bcrypt"));
 const crypto = __importStar(require("crypto"));
-let AuthService = AuthService_1 = class AuthService {
+let AuthService = class AuthService {
     prisma;
     jwtService;
-    logger = new common_1.Logger(AuthService_1.name);
     constructor(prisma, jwtService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
@@ -97,24 +94,49 @@ let AuthService = AuthService_1 = class AuthService {
         try {
             const user = await this.prisma.user.findUnique({
                 where: { username },
+                select: {
+                    id: true,
+                    username: true,
+                    password: true,
+                    kdfSalt: true,
+                    need2fa: true,
+                    isActive: true,
+                }
             });
-            if (!user || !user.isActive) {
-                this.logger.warn(`Failed login attempt for username: ${username}`);
-                throw new common_1.UnauthorizedException('Invalid credentials');
+            const invalidCredentialsMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác';
+            if (!user) {
+                return {
+                    success: false,
+                    need2fa: false,
+                    kdfSalt: '',
+                    message: invalidCredentialsMessage,
+                };
             }
-            const isValidPassword = await bcrypt.compare(password, user.password);
-            if (!isValidPassword) {
-                this.logger.warn(`Invalid password for username: ${username}`);
-                throw new common_1.UnauthorizedException('Invalid credentials');
+            if (!user.isActive) {
+                return {
+                    success: false,
+                    need2fa: false,
+                    kdfSalt: '',
+                    message: 'Tài khoản đã bị vô hiệu hóa',
+                };
             }
-            this.logger.log(`User ${username} authenticated successfully`);
-            const payload = {
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return {
+                    success: false,
+                    need2fa: false,
+                    kdfSalt: '',
+                    message: invalidCredentialsMessage,
+                };
+            }
+            const tempTokenPayload = {
                 sub: user.id,
                 username: user.username,
-                iat: Math.floor(Date.now() / 1000),
                 type: 'temp',
             };
-            const tempToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+            const tempToken = this.jwtService.sign(tempTokenPayload, {
+                expiresIn: '15m',
+            });
             return {
                 success: true,
                 tempToken,
@@ -126,33 +148,15 @@ let AuthService = AuthService_1 = class AuthService {
             if (error instanceof common_1.UnauthorizedException) {
                 throw error;
             }
-            this.logger.error(`Login error for username ${username}:`, error);
-            throw new common_1.UnauthorizedException('Authentication failed');
-        }
-    }
-    async validateUser(userId) {
-        try {
-            const user = await this.prisma.user.findUnique({
-                where: { id: userId },
-                select: {
-                    id: true,
-                    username: true,
-                    email: true,
-                    isActive: true,
-                    need2fa: true,
-                },
-            });
-            return user?.isActive ? user : null;
-        }
-        catch (error) {
-            this.logger.error('Error validating user:', error);
-            return null;
+            console.error('Login error:', error);
+            throw new common_1.BadRequestException('Đã xảy ra lỗi trong quá trình đăng nhập');
         }
     }
 };
 exports.AuthService = AuthService;
-exports.AuthService = AuthService = AuthService_1 = __decorate([
+exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object, jwt_1.JwtService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
