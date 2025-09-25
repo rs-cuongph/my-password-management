@@ -14,6 +14,6 @@ export declare class AppService {
         timestamp: string;
         database: string;
         environment: string;
-        error: any;
+        error: string;
     }>;
 }
