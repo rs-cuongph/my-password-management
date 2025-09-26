@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import * as v from 'valibot';
 import { LoginSchema, type LoginInput } from '../schemas/auth';
 import { useLogin } from '../services/authService';
+import { useAccessibility } from '../hooks/useAccessibility';
+import { useAppStore } from '../stores/appStore';
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState<LoginInput>({
@@ -9,6 +11,12 @@ const LoginForm: React.FC = () => {
     password: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const { screenReaderAnnouncements } = useAppStore();
+
+  const { announceToScreenReader } = useAccessibility(formRef, {
+    announceToScreenReader: screenReaderAnnouncements
+  });
 
   const loginMutation = useLogin();
 
@@ -39,6 +47,14 @@ const LoginForm: React.FC = () => {
           }
         });
         setErrors(fieldErrors);
+
+        // Announce validation errors to screen reader
+        if (screenReaderAnnouncements) {
+          const errorMessages = Object.values(fieldErrors);
+          if (errorMessages.length > 0) {
+            announceToScreenReader(`Có ${errorMessages.length} lỗi trong form: ${errorMessages.join(', ')}`, 'assertive');
+          }
+        }
       }
       return false;
     }
@@ -53,70 +69,87 @@ const LoginForm: React.FC = () => {
 
     loginMutation.mutate(formData, {
       onError: (error: any) => {
-        if (error?.response?.data?.message) {
-          setErrors({ general: error.response.data.message });
-        } else {
-          setErrors({ general: 'Đăng nhập thất bại. Vui lòng thử lại.' });
+        const errorMessage = error?.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        setErrors({ general: errorMessage });
+
+        if (screenReaderAnnouncements) {
+          announceToScreenReader(`Lỗi đăng nhập: ${errorMessage}`, 'assertive');
         }
       },
+      onSuccess: () => {
+        if (screenReaderAnnouncements) {
+          announceToScreenReader('Đăng nhập thành công', 'polite');
+        }
+      }
     });
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">
+    <section className="max-w-md mx-auto card p-6" role="main" aria-labelledby="login-heading">
+      <h1 id="login-heading" className="text-2xl font-bold text-center text-neutral-900 dark:text-neutral-100 mb-6">
         Đăng Nhập
-      </h2>
+      </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
+          <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            Email <span className="text-error-500" aria-label="bắt buộc">*</span>
           </label>
           <input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
+            required
             value={formData.email}
             onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`input-primary ${errors.email ? 'input-error' : ''}`}
             placeholder="Nhập email của bạn"
+            aria-invalid={errors.email ? 'true' : 'false'}
+            aria-describedby={errors.email ? 'email-error' : undefined}
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            <p id="email-error" className="mt-1 text-sm text-error-600 dark:text-error-400" role="alert">
+              <span className="sr-only">Lỗi: </span>
+              {errors.email}
+            </p>
           )}
         </div>
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Mật khẩu
+          <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            Mật khẩu <span className="text-error-500" aria-label="bắt buộc">*</span>
           </label>
           <input
             id="password"
             name="password"
             type="password"
             autoComplete="current-password"
+            required
             value={formData.password}
             onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-              errors.password ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`input-primary ${errors.password ? 'input-error' : ''}`}
             placeholder="Nhập mật khẩu"
+            aria-invalid={errors.password ? 'true' : 'false'}
+            aria-describedby={errors.password ? 'password-error' : undefined}
           />
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+            <p id="password-error" className="mt-1 text-sm text-error-600 dark:text-error-400" role="alert">
+              <span className="sr-only">Lỗi: </span>
+              {errors.password}
+            </p>
           )}
         </div>
 
         {/* General Error */}
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-600">{errors.general}</p>
+          <div className="bg-error-50 dark:bg-error-950 border border-error-200 dark:border-error-800 rounded-xl p-3" role="alert" aria-live="assertive">
+            <p className="text-sm text-error-600 dark:text-error-400">
+              <span className="sr-only">Lỗi: </span>
+              {errors.general}
+            </p>
           </div>
         )}
 
@@ -124,15 +157,22 @@ const LoginForm: React.FC = () => {
         <button
           type="submit"
           disabled={loginMutation.isPending}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-describedby={loginMutation.isPending ? 'loading-status' : undefined}
         >
           {loginMutation.isPending ? (
-            <div className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center justify-center">
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-current"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Đang đăng nhập...
+              <span id="loading-status">Đang đăng nhập...</span>
             </div>
           ) : (
             'Đăng Nhập'
@@ -140,15 +180,22 @@ const LoginForm: React.FC = () => {
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <footer className="mt-6 text-center">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
           Chưa có tài khoản?{' '}
-          <button className="font-medium text-indigo-600 hover:text-indigo-500">
+          <button
+            type="button"
+            className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 focus:outline-none focus:underline"
+            aria-describedby="signup-help"
+          >
             Đăng ký ngay
           </button>
         </p>
-      </div>
-    </div>
+        <span id="signup-help" className="sr-only">
+          Chuyển đến trang đăng ký tài khoản mới
+        </span>
+      </footer>
+    </section>
   );
 };
 

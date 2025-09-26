@@ -8,6 +8,10 @@ interface AppState {
   fontSize: 'normal' | 'large';
   clipboardAutoClearTimeout: number; // in milliseconds
   isInitialized: boolean;
+  // Accessibility settings
+  highContrast: boolean;
+  reducedMotion: boolean;
+  screenReaderAnnouncements: boolean;
 }
 
 interface AppActions {
@@ -20,6 +24,14 @@ interface AppActions {
   setClipboardAutoClearTimeout: (timeout: number) => void;
   initializeTheme: () => void;
   getResolvedTheme: () => 'light' | 'dark';
+  // Accessibility actions
+  setHighContrast: (enabled: boolean) => void;
+  toggleHighContrast: () => void;
+  setReducedMotion: (enabled: boolean) => void;
+  toggleReducedMotion: () => void;
+  setScreenReaderAnnouncements: (enabled: boolean) => void;
+  toggleScreenReaderAnnouncements: () => void;
+  initializeAccessibility: () => void;
 }
 
 // Helper function to get system theme preference
@@ -36,11 +48,32 @@ const applyTheme = (theme: 'light' | 'dark') => {
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
-    
+
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#fafafa');
+    }
+  }
+};
+
+// Helper function to apply accessibility settings
+const applyAccessibilitySettings = (highContrast: boolean, reducedMotion: boolean) => {
+  if (typeof document !== 'undefined') {
+    const root = document.documentElement;
+
+    // High contrast mode
+    if (highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+
+    // Reduced motion
+    if (reducedMotion) {
+      root.classList.add('reduce-motion');
+    } else {
+      root.classList.remove('reduce-motion');
     }
   }
 };
@@ -56,6 +89,10 @@ export const useAppStore = create<AppState & AppActions>()(
         fontSize: 'normal',
         clipboardAutoClearTimeout: 15 * 1000, // 15 seconds default
         isInitialized: false,
+        // Accessibility state
+        highContrast: false,
+        reducedMotion: false,
+        screenReaderAnnouncements: true,
 
         // Actions
         toggleSidebar: () =>
@@ -115,6 +152,63 @@ export const useAppStore = create<AppState & AppActions>()(
           const { theme } = get();
           return theme === 'system' ? getSystemTheme() : theme;
         },
+
+        // Accessibility actions
+        setHighContrast: (enabled) => {
+          set({ highContrast: enabled }, undefined, 'setHighContrast');
+          const { reducedMotion } = get();
+          applyAccessibilitySettings(enabled, reducedMotion);
+        },
+
+        toggleHighContrast: () => {
+          const { highContrast } = get();
+          get().setHighContrast(!highContrast);
+        },
+
+        setReducedMotion: (enabled) => {
+          set({ reducedMotion: enabled }, undefined, 'setReducedMotion');
+          const { highContrast } = get();
+          applyAccessibilitySettings(highContrast, enabled);
+        },
+
+        toggleReducedMotion: () => {
+          const { reducedMotion } = get();
+          get().setReducedMotion(!reducedMotion);
+        },
+
+        setScreenReaderAnnouncements: (enabled) =>
+          set({ screenReaderAnnouncements: enabled }, undefined, 'setScreenReaderAnnouncements'),
+
+        toggleScreenReaderAnnouncements: () => {
+          const { screenReaderAnnouncements } = get();
+          get().setScreenReaderAnnouncements(!screenReaderAnnouncements);
+        },
+
+        initializeAccessibility: () => {
+          const { highContrast, reducedMotion } = get();
+
+          // Detect system preferences
+          const prefersReducedMotion = typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+          if (prefersReducedMotion && !reducedMotion) {
+            get().setReducedMotion(true);
+          }
+
+          // Apply current settings
+          applyAccessibilitySettings(highContrast, reducedMotion);
+
+          // Listen for system motion preference changes
+          if (typeof window !== 'undefined') {
+            const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            const handleMotionChange = () => {
+              get().setReducedMotion(motionQuery.matches);
+            };
+            motionQuery.addEventListener('change', handleMotionChange);
+
+            return () => motionQuery.removeEventListener('change', handleMotionChange);
+          }
+        },
       }),
       {
         name: 'app-store',
@@ -123,6 +217,9 @@ export const useAppStore = create<AppState & AppActions>()(
           language: state.language,
           fontSize: state.fontSize,
           clipboardAutoClearTimeout: state.clipboardAutoClearTimeout,
+          highContrast: state.highContrast,
+          reducedMotion: state.reducedMotion,
+          screenReaderAnnouncements: state.screenReaderAnnouncements,
         }),
       }
     ),

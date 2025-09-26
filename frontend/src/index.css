@@ -16,6 +16,77 @@
     @apply transition-colors duration-300;
   }
 
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
+  /* High contrast mode */
+  .high-contrast {
+    --tw-bg-opacity: 1;
+    --tw-text-opacity: 1;
+  }
+
+  .high-contrast body {
+    @apply bg-white text-black;
+    @apply dark:bg-black dark:text-white;
+  }
+
+  .high-contrast .card {
+    @apply border-2 border-black;
+    @apply dark:border-white;
+    @apply bg-white dark:bg-black;
+  }
+
+  .high-contrast .btn-primary {
+    @apply bg-black text-white border-2 border-black;
+    @apply dark:bg-white dark:text-black dark:border-white;
+  }
+
+  .high-contrast .btn-secondary {
+    @apply bg-white text-black border-2 border-black;
+    @apply dark:bg-black dark:text-white dark:border-white;
+  }
+
+  .high-contrast .input-primary {
+    @apply border-2 border-black bg-white text-black;
+    @apply dark:border-white dark:bg-black dark:text-white;
+  }
+
+  /* Reduced motion */
+  .reduce-motion,
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reduce-motion .skeleton {
+    @apply animate-none;
+  }
+
+  /* Focus indicators for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    @apply dark:ring-primary-400 dark:ring-offset-neutral-900;
+  }
+
+  .high-contrast *:focus-visible {
+    @apply ring-black ring-4;
+    @apply dark:ring-white;
+  }
+
   /* Font size variants */
   .font-size-normal {
     font-size: 1rem; /* 16px */
@@ -174,7 +245,7 @@
     }
   }
 
-  /* Button variants */
+  /* Button variants with WCAG AA compliance */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 active:bg-primary-800;
     @apply dark:bg-primary-500 dark:hover:bg-primary-600 dark:active:bg-primary-700;
@@ -183,6 +254,13 @@
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
     @apply dark:focus:ring-offset-neutral-900;
     @apply transform hover:scale-105 active:scale-95;
+    /* Ensure 4.5:1 contrast ratio */
+    color: #ffffff;
+    background-color: #2563eb; /* blue-600 with 4.5:1 ratio against white */
+  }
+
+  .btn-primary:hover {
+    background-color: #1d4ed8; /* blue-700 */
   }
   
   .btn-secondary {
@@ -193,6 +271,14 @@
     @apply focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2;
     @apply dark:focus:ring-offset-neutral-900;
     @apply transform hover:scale-105 active:scale-95;
+    /* Ensure 4.5:1 contrast ratio */
+    color: #171717; /* neutral-900 */
+    background-color: #f5f5f5; /* neutral-100 */
+  }
+
+  .dark .btn-secondary {
+    color: #fafafa; /* neutral-50 */
+    background-color: #262626; /* neutral-800 */
   }
   
   .btn-danger {

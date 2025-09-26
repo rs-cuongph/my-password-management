@@ -20,7 +20,7 @@ declare module '@tanstack/react-router' {
 }
 
 function App() {
-  const { fontSize } = useAppStore();
+  const { fontSize, initializeAccessibility } = useAppStore();
 
   // Apply font size class to body
   useEffect(() => {
@@ -28,6 +28,11 @@ function App() {
     body.classList.remove('font-size-normal', 'font-size-large');
     body.classList.add(`font-size-${fontSize}`);
   }, [fontSize]);
+
+  // Initialize accessibility settings
+  useEffect(() => {
+    initializeAccessibility();
+  }, [initializeAccessibility]);
 
   return (
     <QueryClientProvider client={queryClient}>
