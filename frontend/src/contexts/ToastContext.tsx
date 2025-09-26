@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 export interface Toast {
   id: string;
@@ -7,6 +7,12 @@ export interface Toast {
   duration?: number;
   countdown?: number;
   showCountdown?: boolean;
+  showProgress?: boolean;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  persistent?: boolean;
 }
 
 interface ToastContextType {
@@ -85,6 +91,44 @@ const ToastItem: React.FC<{
   toast: Toast;
   onRemove: (id: string) => void;
 }> = ({ toast, onRemove }) => {
+  const [progress, setProgress] = useState(100);
+  const [isExiting, setIsExiting] = useState(false);
+  const progressRef = useRef<NodeJS.Timeout>();
+  const startTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!toast.duration || toast.duration <= 0 || toast.persistent) {
+      return;
+    }
+
+    const startTime = Date.now();
+    startTimeRef.current = startTime;
+
+    if (toast.showProgress) {
+      progressRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, toast.duration! - elapsed);
+        const progressPercent = (remaining / toast.duration!) * 100;
+        
+        setProgress(progressPercent);
+        
+        if (remaining <= 0) {
+          clearInterval(progressRef.current);
+        }
+      }, 50);
+    }
+
+    return () => {
+      if (progressRef.current) {
+        clearInterval(progressRef.current);
+      }
+    };
+  }, [toast.duration, toast.showProgress, toast.persistent]);
+
+  const handleRemove = () => {
+    setIsExiting(true);
+    setTimeout(() => onRemove(toast.id), 200); // Match exit animation duration
+  };
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
@@ -130,7 +174,22 @@ const ToastItem: React.FC<{
   };
 
   return (
-    <div className={`border rounded-2xl p-4 shadow-xl backdrop-blur-md transition-all duration-300 ease-in-out animate-slide-down ${getToastStyles()}`}>
+    <div 
+      className={`
+        relative border rounded-2xl p-4 shadow-xl backdrop-blur-md overflow-hidden
+        transition-all duration-300 ease-in-out 
+        ${isExiting ? 'toast-exit-active' : 'toast-enter-active'} 
+        ${getToastStyles()}
+      `}
+    >
+      {/* Progress bar */}
+      {toast.showProgress && toast.duration && toast.duration > 0 && !toast.persistent && (
+        <div 
+          className="toast-progress-bar"
+          style={{ width: `${progress}%` }}
+        />
+      )}
+      
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {getIcon()}
@@ -142,15 +201,28 @@ const ToastItem: React.FC<{
               Tự xóa sau {toast.countdown}s
             </p>
           )}
+          
+          {/* Action button */}
+          {toast.action && (
+            <button
+              onClick={toast.action.onClick}
+              className="mt-2 text-xs font-medium underline hover:no-underline transition-all"
+            >
+              {toast.action.label}
+            </button>
+          )}
         </div>
-        <button
-          onClick={() => onRemove(toast.id)}
-          className="flex-shrink-0 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors rounded-lg p-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        
+        {!toast.persistent && (
+          <button
+            onClick={handleRemove}
+            className="flex-shrink-0 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors rounded-lg p-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

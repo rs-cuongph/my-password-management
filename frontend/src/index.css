@@ -35,6 +35,85 @@
 }
 
 @layer components {
+  /* Toast animations */
+  .toast-enter {
+    @apply transform translate-x-full opacity-0;
+  }
+  
+  .toast-enter-active {
+    @apply transform translate-x-0 opacity-100;
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  .toast-exit {
+    @apply transform translate-x-0 opacity-100;
+  }
+  
+  .toast-exit-active {
+    @apply transform translate-x-full opacity-0;
+    @apply transition-all duration-200 ease-in;
+  }
+  
+  .toast-progress-bar {
+    @apply absolute bottom-0 left-0 h-1 bg-current opacity-30;
+    @apply transition-all duration-100 ease-linear;
+  }
+  
+  /* Status indicator animations */
+  .status-pulse {
+    @apply animate-pulse;
+  }
+  
+  .status-spin {
+    @apply animate-spin;
+  }
+  
+  .status-bounce {
+    @apply animate-bounce;
+  }
+  
+  /* Skeleton loading animations */
+  .skeleton {
+    @apply bg-neutral-200 dark:bg-neutral-700 rounded;
+    @apply animate-pulse;
+  }
+  
+  .skeleton-text {
+    @apply skeleton h-4 mb-2;
+  }
+  
+  .skeleton-title {
+    @apply skeleton h-6 mb-3;
+  }
+  
+  .skeleton-button {
+    @apply skeleton h-10 w-24;
+  }
+  
+  .skeleton-card {
+    @apply skeleton h-32 w-full;
+  }
+  
+  .skeleton-wave {
+    @apply relative overflow-hidden;
+  }
+  
+  .skeleton-wave::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: '';
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: skeleton-wave 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes skeleton-wave {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
   /* Button variants */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 active:bg-primary-800;

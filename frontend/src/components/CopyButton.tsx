@@ -98,7 +98,8 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
           type: 'success',
           duration: clearTimeout > 0 ? (clearTimeout + 1) * 1000 : 3000,
           countdown: clearTimeout,
-          showCountdown: showCountdown && clearTimeout > 0
+          showCountdown: showCountdown && clearTimeout > 0,
+          showProgress: clearTimeout > 0 && showCountdown
         });
         setToastId(newToastId);
 
