@@ -14,5 +14,6 @@ export class Verify2faDto {
 export class Verify2faResponseDto {
   success: boolean;
   accessToken?: string;
+  kdfSalt?: string;
   message?: string;
 }

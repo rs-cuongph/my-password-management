@@ -10,6 +10,7 @@ export interface User {
   name: string;
   createdAt: string;
   updatedAt: string;
+  kdfSalt?: string; // Salt for client-side key derivation
 }
 
 export interface AuthState {

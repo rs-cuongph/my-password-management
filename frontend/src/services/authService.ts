@@ -13,9 +13,11 @@ export const authKeys = {
 
 // Types
 interface LoginResponse {
-  user: User;
-  access_token: string;
-  refresh_token?: string;
+  success: boolean;
+  tempToken?: string;
+  need2fa: boolean;
+  kdfSalt: string;
+  message?: string;
 }
 
 interface RegisterResponse {
@@ -33,6 +35,7 @@ interface TOTPSetupResponse {
 interface TOTPVerificationResponse {
   success: boolean;
   accessToken?: string;
+  kdfSalt?: string;
   message?: string;
 }
 
@@ -70,20 +73,44 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: (response) => {
-      const { user, access_token } = response.data;
-      login(user, access_token);
-
-      // Set user data in cache
-      queryClient.setQueryData(authKeys.me(), user);
-
-      // Invalidate and refetch user queries
-      queryClient.invalidateQueries({ queryKey: authKeys.all });
-
-      // Redirect to master password page after successful login
-      setTimeout(() => {
-        window.location.href = '/master-password';
-      }, 100);
+    onSuccess: async (response) => {
+      const { success, tempToken, kdfSalt, need2fa } = response.data;
+      
+      if (success && tempToken) {
+        // Store kdfSalt in sessionStorage for master password page
+        sessionStorage.setItem('kdfSalt', kdfSalt);
+        
+        if (need2fa) {
+          // Redirect to TOTP verification page
+          setTimeout(() => {
+            window.location.href = '/totp-verification';
+          }, 100);
+        } else {
+          // Get user info and complete login
+          try {
+            const userResponse = await authApi.getMe();
+            const user = { ...userResponse.data, kdfSalt };
+            login(user, tempToken);
+            
+            // Set user data in cache
+            queryClient.setQueryData(authKeys.me(), user);
+            
+            // Invalidate and refetch user queries
+            queryClient.invalidateQueries({ queryKey: authKeys.all });
+            
+            // Redirect to master password page after successful login
+            setTimeout(() => {
+              window.location.href = '/master-password';
+            }, 100);
+          } catch (error) {
+            console.error('Failed to get user info:', error);
+            // Still redirect to master password page with kdfSalt
+            setTimeout(() => {
+              window.location.href = '/master-password';
+            }, 100);
+          }
+        }
+      }
     },
     onError: (error) => {
       console.error('Login failed:', error);
@@ -167,11 +194,10 @@ export const useRefreshToken = () => {
   const { setToken } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ refreshToken }: { refreshToken: string }) =>
-      authApi.refreshToken(refreshToken),
+    mutationFn: () => authApi.refreshToken(),
     onSuccess: (response) => {
-      const { access_token } = response.data;
-      setToken(access_token);
+      const { tempToken } = response.data;
+      setToken(tempToken || '');
 
       // Invalidate all queries to refetch with new token
       queryClient.invalidateQueries();
@@ -201,13 +227,26 @@ export const useVerifyTOTP = () => {
 
   return useMutation({
     mutationFn: authApi.verifyTOTP,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.data.success && response.data.accessToken) {
+        const { accessToken, kdfSalt } = response.data;
+        
+        // Store kdfSalt in sessionStorage for master password page
+        if (kdfSalt) {
+          sessionStorage.setItem('kdfSalt', kdfSalt);
+        }
+        
         // Get user from store or make API call to get user info
         const { user } = useAuthStore.getState();
         if (user) {
-          login(user, response.data.accessToken);
+          const userWithSalt = { ...user, kdfSalt };
+          login(userWithSalt, accessToken);
           queryClient.invalidateQueries({ queryKey: authKeys.all });
+          
+          // Redirect to master password page
+          setTimeout(() => {
+            window.location.href = '/master-password';
+          }, 100);
         }
       }
     },

@@ -230,7 +230,7 @@ export class AuthService {
       // Get user with encrypted TOTP secret
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { id: true, username: true, totpSecret: true },
+        select: { id: true, username: true, totpSecret: true, kdfSalt: true },
       });
 
       if (!user) {
@@ -284,6 +284,7 @@ export class AuthService {
       return {
         success: true,
         accessToken,
+        kdfSalt: user.kdfSalt,
         message: '2FA đã được kích hoạt thành công',
       };
     } catch (error) {

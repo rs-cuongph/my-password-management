@@ -25,7 +25,7 @@ interface MasterPasswordActions {
 
 export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswordActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // State
       masterKey: null,
       kdfParams: null,
@@ -154,7 +154,7 @@ export const getMasterPasswordStatus = () => {
 };
 
 // Auto-lock functionality
-let autoLockTimer: NodeJS.Timeout | null = null;
+let autoLockTimer: number | null = null;
 
 export const startAutoLockTimer = () => {
   if (autoLockTimer) {

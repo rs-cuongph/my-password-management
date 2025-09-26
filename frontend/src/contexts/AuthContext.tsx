@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useAuthStore, isTokenExpired, getTokenExpiration } from '../stores/authStore';
-import { authApi } from '../services/authService';
+// import { authApi } from '../services/authService';
 
 interface AuthContextValue {
   // Auth state từ store
@@ -24,9 +24,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
-  const router = useRouter();
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+  const checkIntervalRef = useRef<number | null>(null);
 
   const {
     user,
@@ -82,8 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (timeUntilExpiration <= 5 * 60 * 1000) {
       try {
         setLoading(true);
-        const response = await authApi.refreshToken();
-        login(response.user, response.token);
+        // For now, just logout if token is expired
+        logout();
       } catch (error) {
         console.error('Token refresh failed:', error);
         logout();

@@ -1,11 +1,19 @@
-// Note: In a real implementation, you would use Web Crypto API or a library like crypto-js
-// This is a simplified implementation for demonstration purposes
+import argon2 from 'argon2-browser';
+
+export interface Argon2Params {
+  memory: number; // Memory in KB (64-128MB = 65536-131072 KB)
+  time: number; // Time cost (2-3 iterations)
+  parallelism: number; // Parallelism factor
+  hashLength: number; // Output hash length in bytes
+}
 
 export interface KDFParams {
   salt: string;
-  iterations: number;
-  keyLength: number;
-  digest: string;
+  memory: number;
+  time: number;
+  parallelism: number;
+  hashLength: number;
+  algorithm: 'argon2id';
 }
 
 export interface MasterKeyResult {
@@ -29,90 +37,156 @@ function generateRandomBytes(length: number): Uint8Array {
   return array;
 }
 
+
 /**
- * Simple hash function (simplified implementation)
+ * Detect device capabilities for optimal Argon2 parameters
  */
-function simpleHash(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+function detectDeviceCapabilities(): { isMobile: boolean; availableMemory: number } {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Estimate available memory (rough estimation)
+  let availableMemory = 128 * 1024; // Default 128MB in KB
+  
+  if (typeof navigator !== 'undefined' && 'deviceMemory' in navigator) {
+    // Use Device Memory API if available
+    availableMemory = (navigator as any).deviceMemory * 1024 * 1024 / 1024; // Convert GB to KB
+  } else if (isMobile) {
+    // Conservative estimate for mobile devices
+    availableMemory = 64 * 1024; // 64MB in KB
   }
-  return Math.abs(hash).toString(16);
+  
+  return { isMobile, availableMemory };
 }
 
 /**
- * Derive master key from password using simplified KDF
+ * Get optimal Argon2 parameters based on device capabilities
+ */
+function getOptimalArgon2Params(): Argon2Params {
+  const { isMobile, availableMemory } = detectDeviceCapabilities();
+  
+  // Memory: Use 64-128MB, but not more than 50% of available memory
+  const maxMemory = Math.min(128 * 1024, Math.floor(availableMemory * 0.5));
+  const minMemory = 64 * 1024;
+  const memory = Math.max(minMemory, maxMemory);
+  
+  // Time: 2-3 iterations, use fewer for mobile
+  const time = isMobile ? 2 : 3;
+  
+  // Parallelism: Use fewer threads on mobile
+  const parallelism = isMobile ? 1 : 2;
+  
+  // Hash length: 32 bytes (256 bits)
+  const hashLength = 32;
+  
+  return { memory, time, parallelism, hashLength };
+}
+
+/**
+ * Derive master key from password using Argon2id
  * @param password - The master password
+ * @param serverSalt - Salt from server (kdfSalt)
  * @param progressCallback - Optional callback for progress updates
+ * @param customParams - Optional custom Argon2 parameters
  * @returns Promise with master key and KDF parameters
  */
 export async function deriveMasterKey(
   password: string,
-  progressCallback?: (progress: number) => void
+  serverSalt: string,
+  progressCallback?: (progress: number) => void,
+  customParams?: Partial<Argon2Params>
 ): Promise<MasterKeyResult> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Generate random salt
-      const saltBytes = generateRandomBytes(32);
-      const saltHex = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // KDF parameters
-      const iterations = 100000; // High iteration count for security
-      const keyLength = 32; // 256 bits
-      const digest = 'sha256';
-      
-      // Simulate progress for better UX
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress > 90) progress = 90;
-        if (progressCallback) {
-          progressCallback(Math.min(progress, 90));
-        }
-      }, 50);
-
-      // Perform key derivation (simplified)
-      setTimeout(() => {
-        try {
-          // Simplified key derivation - in production use proper PBKDF2
-          let derivedKey = password + saltHex;
-          for (let i = 0; i < iterations; i++) {
-            derivedKey = simpleHash(derivedKey);
-            if (i % 10000 === 0 && progressCallback) {
-              const iterationProgress = (i / iterations) * 90;
-              progressCallback(Math.min(iterationProgress, 90));
-            }
-          }
-          
-          clearInterval(progressInterval);
-          
-          // Complete progress
-          if (progressCallback) {
-            progressCallback(100);
-          }
-          
-          // Pad or truncate to desired length
-          const masterKey = derivedKey.padEnd(64, '0').substring(0, 64);
-          const kdfParams: KDFParams = {
-            salt: saltHex,
-            iterations,
-            keyLength,
-            digest
-          };
-          
-          resolve({ masterKey, kdfParams });
-        } catch (error) {
-          clearInterval(progressInterval);
-          reject(error);
-        }
-      }, 1000); // Simulate processing time
-      
-    } catch (error) {
-      reject(error);
+  try {
+    // Validate inputs
+    if (!password || password.length === 0) {
+      throw new Error('Password cannot be empty');
     }
-  });
+    
+    if (!serverSalt || serverSalt.length === 0) {
+      throw new Error('Server salt is required');
+    }
+    
+    // Get optimal parameters
+    const defaultParams = getOptimalArgon2Params();
+    const params: Argon2Params = {
+      ...defaultParams,
+      ...customParams
+    };
+    
+    // Validate parameters
+    if (params.memory < 64 * 1024 || params.memory > 128 * 1024) {
+      throw new Error('Memory must be between 64MB and 128MB');
+    }
+    
+    if (params.time < 2 || params.time > 3) {
+      throw new Error('Time must be between 2 and 3');
+    }
+    
+    if (params.parallelism < 1 || params.parallelism > 4) {
+      throw new Error('Parallelism must be between 1 and 4');
+    }
+    
+    // Convert hex salt to Uint8Array
+    const saltBytes = new Uint8Array(serverSalt.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+    
+    // Start progress tracking
+    if (progressCallback) {
+      progressCallback(10);
+    }
+    
+    // Perform Argon2id key derivation
+    const result = await argon2.hash({
+      pass: password,
+      salt: saltBytes,
+      type: argon2.ArgonType.Argon2id,
+      hashLen: params.hashLength,
+      time: params.time,
+      mem: params.memory,
+      parallelism: params.parallelism,
+    });
+    
+    // Update progress
+    if (progressCallback) {
+      progressCallback(90);
+    }
+    
+    // Convert result to hex string
+    const masterKey = Array.from(result.hash)
+      .map((b: number) => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Complete progress
+    if (progressCallback) {
+      progressCallback(100);
+    }
+    
+    const kdfParams: KDFParams = {
+      salt: serverSalt,
+      memory: params.memory,
+      time: params.time,
+      parallelism: params.parallelism,
+      hashLength: params.hashLength,
+      algorithm: 'argon2id'
+    };
+    
+    return { masterKey, kdfParams };
+    
+  } catch (error) {
+    // Handle specific Argon2 errors
+    if (error instanceof Error) {
+      if (error.message.includes('memory')) {
+        throw new Error('Insufficient memory for key derivation. Please close other applications and try again.');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('Key derivation timed out. Please try again.');
+      }
+      if (error.message.includes('salt')) {
+        throw new Error('Invalid salt provided by server.');
+      }
+    }
+    
+    // Re-throw with more user-friendly message
+    throw new Error(`Key derivation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 /**
@@ -120,27 +194,133 @@ export async function deriveMasterKey(
  * @param password - The password to verify
  * @param kdfParams - The stored KDF parameters
  * @param expectedKey - The expected master key
+ * @param progressCallback - Optional callback for progress updates
  * @returns Promise with verification result
  */
 export async function verifyMasterPassword(
   password: string,
   kdfParams: KDFParams,
-  expectedKey: string
+  expectedKey: string,
+  progressCallback?: (progress: number) => void
 ): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Simplified verification - in production use proper PBKDF2
-      let derivedKey = password + kdfParams.salt;
-      for (let i = 0; i < kdfParams.iterations; i++) {
-        derivedKey = simpleHash(derivedKey);
-      }
-      
-      const derivedKeyHex = derivedKey.padEnd(64, '0').substring(0, 64);
-      resolve(derivedKeyHex === expectedKey);
-    } catch (error) {
-      reject(error);
+  try {
+    // Validate inputs
+    if (!password || password.length === 0) {
+      throw new Error('Password cannot be empty');
     }
-  });
+    
+    if (!kdfParams.salt || kdfParams.salt.length === 0) {
+      throw new Error('Salt is required');
+    }
+    
+    if (!expectedKey || expectedKey.length === 0) {
+      throw new Error('Expected key is required');
+    }
+    
+    // Validate KDF parameters
+    if (kdfParams.algorithm !== 'argon2id') {
+      throw new Error('Only Argon2id algorithm is supported');
+    }
+    
+    if (kdfParams.memory < 64 * 1024 || kdfParams.memory > 128 * 1024) {
+      throw new Error('Invalid memory parameter');
+    }
+    
+    if (kdfParams.time < 2 || kdfParams.time > 3) {
+      throw new Error('Invalid time parameter');
+    }
+    
+    if (kdfParams.parallelism < 1 || kdfParams.parallelism > 4) {
+      throw new Error('Invalid parallelism parameter');
+    }
+    
+    // Convert hex salt to Uint8Array
+    const saltBytes = new Uint8Array(kdfParams.salt.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+    
+    // Start progress tracking
+    if (progressCallback) {
+      progressCallback(10);
+    }
+    
+    // Perform Argon2id key derivation with stored parameters
+    const result = await argon2.hash({
+      pass: password,
+      salt: saltBytes,
+      type: argon2.ArgonType.Argon2id,
+      hashLen: kdfParams.hashLength,
+      time: kdfParams.time,
+      mem: kdfParams.memory,
+      parallelism: kdfParams.parallelism,
+    });
+    
+    // Update progress
+    if (progressCallback) {
+      progressCallback(90);
+    }
+    
+    // Convert result to hex string
+    const derivedKey = Array.from(result.hash)
+      .map((b: number) => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Complete progress
+    if (progressCallback) {
+      progressCallback(100);
+    }
+    
+    // Compare derived key with expected key
+    return derivedKey === expectedKey;
+    
+  } catch (error) {
+    // Handle specific Argon2 errors
+    if (error instanceof Error) {
+      if (error.message.includes('memory')) {
+        throw new Error('Insufficient memory for key verification. Please close other applications and try again.');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('Key verification timed out. Please try again.');
+      }
+      if (error.message.includes('salt')) {
+        throw new Error('Invalid salt in stored parameters.');
+      }
+    }
+    
+    // Re-throw with more user-friendly message
+    throw new Error(`Password verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get device-specific Argon2 parameters for optimal performance
+ * @returns Argon2 parameters optimized for current device
+ */
+export function getDeviceOptimalParams(): Argon2Params {
+  return getOptimalArgon2Params();
+}
+
+/**
+ * Validate Argon2 parameters
+ * @param params - Parameters to validate
+ * @returns Validation result with error message if invalid
+ */
+export function validateArgon2Params(params: Argon2Params): { valid: boolean; error?: string } {
+  if (params.memory < 64 * 1024 || params.memory > 128 * 1024) {
+    return { valid: false, error: 'Memory must be between 64MB and 128MB' };
+  }
+  
+  if (params.time < 2 || params.time > 3) {
+    return { valid: false, error: 'Time must be between 2 and 3' };
+  }
+  
+  if (params.parallelism < 1 || params.parallelism > 4) {
+    return { valid: false, error: 'Parallelism must be between 1 and 4' };
+  }
+  
+  if (params.hashLength < 16 || params.hashLength > 64) {
+    return { valid: false, error: 'Hash length must be between 16 and 64 bytes' };
+  }
+  
+  return { valid: true };
 }
 
 /**
@@ -149,16 +329,16 @@ export async function verifyMasterPassword(
  * @returns Random key as hex string
  */
 export function generateRandomKey(length: number = 32): string {
-  return randomBytes(length).toString('hex');
+  const randomBytes = generateRandomBytes(length);
+  return Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
  * Encrypt data using AES-GCM (simplified for demo)
  * @param data - Data to encrypt
- * @param key - Encryption key
  * @returns Encrypted data
  */
-export function encryptData(data: string, key: string): string {
+export function encryptData(data: string): string {
   // This is a simplified implementation
   // In production, use a proper AES-GCM implementation
   const encoded = btoa(data);
@@ -168,10 +348,9 @@ export function encryptData(data: string, key: string): string {
 /**
  * Decrypt data using AES-GCM (simplified for demo)
  * @param encryptedData - Encrypted data
- * @param key - Decryption key
  * @returns Decrypted data
  */
-export function decryptData(encryptedData: string, key: string): string {
+export function decryptData(encryptedData: string): string {
   // This is a simplified implementation
   // In production, use a proper AES-GCM implementation
   try {

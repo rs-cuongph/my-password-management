@@ -15,7 +15,7 @@ const MasterPasswordPage: React.FC = () => {
   const [kdfProgress, setKdfProgress] = useState(0);
   
   const passwordInputRef = useRef<HTMLInputElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   // Auto-focus password input on mount
   useEffect(() => {
@@ -69,6 +69,13 @@ const MasterPasswordPage: React.FC = () => {
       return;
     }
 
+    // Get kdfSalt from sessionStorage
+    const kdfSalt = sessionStorage.getItem('kdfSalt');
+    if (!kdfSalt) {
+      setError('Không tìm thấy salt từ server. Vui lòng đăng nhập lại.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setKdfProgress(0);
@@ -77,6 +84,7 @@ const MasterPasswordPage: React.FC = () => {
       // Derive master key with progress callback
       const { masterKey, kdfParams } = await deriveMasterKey(
         password,
+        kdfSalt,
         (progress) => setKdfProgress(progress)
       );
 
@@ -85,14 +93,15 @@ const MasterPasswordPage: React.FC = () => {
       setKDFParams(kdfParams);
       setIsUnlocked(true);
 
-      // Clear password from memory
+      // Clear password from memory and kdfSalt from sessionStorage
       setPassword('');
+      sessionStorage.removeItem('kdfSalt');
 
       // Navigate to home page
       navigate({ to: '/' });
     } catch (err) {
       console.error('Master key derivation failed:', err);
-      setError('Không thể tạo master key. Vui lòng thử lại.');
+      setError(err instanceof Error ? err.message : 'Không thể tạo master key. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
       setKdfProgress(0);

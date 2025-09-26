@@ -1,4 +1,4 @@
-import React, { useEffect, ReactNode } from 'react';
+import React, { useEffect, type ReactNode } from 'react';
 import { Navigate, useLocation } from '@tanstack/react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { shouldShowMasterPasswordPage } from '../stores/masterPasswordStore';
