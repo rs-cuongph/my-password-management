@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PasswordEntry } from '../utils/vaultCrypto';
+import CopyButton from './CopyButton';
 
 interface VaultDashboardProps {
   entries: PasswordEntry[];
@@ -83,15 +84,6 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
     }
   };
 
-  const copyToClipboard = async (text: string, type: string = 'password') => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // Show temporary success feedback
-      console.log(`${type} copied to clipboard`);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('vi-VN', {
@@ -223,15 +215,13 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500 w-20">Tài khoản:</span>
                         <span className="text-sm font-medium text-gray-900">{entry.username}</span>
-                        <button
-                          onClick={() => copyToClipboard(entry.username, 'tài khoản')}
-                          className="text-gray-400 hover:text-gray-600 p-1"
-                          title="Sao chép tài khoản"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
+                        <CopyButton
+                          text={entry.username}
+                          type="tài khoản"
+                          clearTimeout={10}
+                          size="sm"
+                          variant="ghost"
+                        />
                       </div>
 
                       {/* Password */}
@@ -256,15 +246,13 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
                             </svg>
                           )}
                         </button>
-                        <button
-                          onClick={() => copyToClipboard(entry.password, 'mật khẩu')}
-                          className="text-gray-400 hover:text-gray-600 p-1"
-                          title="Sao chép mật khẩu"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
+                        <CopyButton
+                          text={entry.password}
+                          type="mật khẩu"
+                          clearTimeout={15}
+                          size="sm"
+                          variant="ghost"
+                        />
                       </div>
 
                       {/* Hint */}

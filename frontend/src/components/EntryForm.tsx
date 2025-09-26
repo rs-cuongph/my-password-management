@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PasswordEntry } from '../utils/vaultCrypto';
+import CopyButton from './CopyButton';
 
 interface EntryFormProps {
   entry?: PasswordEntry; // Undefined khi thêm mới, có giá trị khi edit
@@ -215,15 +216,28 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tài khoản *
             </label>
-            <input
-              type="text"
-              value={formData.username}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.username ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="email@example.com hoặc tên đăng nhập"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => handleInputChange('username', e.target.value)}
+                className={`w-full px-3 py-2 pr-12 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.username ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="email@example.com hoặc tên đăng nhập"
+              />
+              {formData.username && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <CopyButton
+                    text={formData.username}
+                    type="tài khoản"
+                    clearTimeout={10}
+                    size="sm"
+                    variant="ghost"
+                  />
+                </div>
+              )}
+            </div>
             {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
           </div>
 
@@ -237,7 +251,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`w-full px-3 py-2 pr-20 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 pr-24 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Nhập mật khẩu"
@@ -260,6 +274,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                     </svg>
                   )}
                 </button>
+                {formData.password && (
+                  <CopyButton
+                    text={formData.password}
+                    type="mật khẩu"
+                    clearTimeout={15}
+                    size="sm"
+                    variant="ghost"
+                  />
+                )}
               </div>
             </div>
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
