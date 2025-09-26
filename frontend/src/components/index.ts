@@ -24,6 +24,13 @@ export { default as CopyButton } from './CopyButton';
 export { LockStatusIndicator, CompactLockIndicator } from './LockStatusIndicator';
 export { default as KDFProgressIndicator } from './KDFProgressIndicator';
 
+// Export settings components
+export { AutoLockTimeoutSettings } from './AutoLockTimeoutSettings';
+export { ClipboardTimeoutSettings } from './ClipboardTimeoutSettings';
+export { FontSizeSettings } from './FontSizeSettings';
+export { KDFParametersSettings } from './KDFParametersSettings';
+export { VaultExportImport } from './VaultExportImport';
+
 // Export toast context
 export { useToast } from '../contexts/ToastContext';
 export type { Toast } from '../contexts/ToastContext';

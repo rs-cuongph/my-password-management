@@ -4,6 +4,13 @@ import { useAppStore } from '../stores/appStore';
 import { useAuthStore } from '../stores/authStore';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useTheme } from '../hooks/useTheme';
+import {
+  AutoLockTimeoutSettings,
+  ClipboardTimeoutSettings,
+  FontSizeSettings,
+  KDFParametersSettings,
+  VaultExportImport,
+} from '../components';
 
 const SettingsPage: React.FC = () => {
   const { language, setLanguage } = useAppStore();
@@ -30,6 +37,11 @@ const SettingsPage: React.FC = () => {
               <ThemeToggle variant="dropdown" size="md" />
             </div>
           ),
+        },
+        {
+          name: 'Kích thước chữ',
+          description: 'Tùy chỉnh kích thước chữ hiển thị',
+          component: <FontSizeSettings />,
         },
         {
           name: 'Ngôn ngữ',
@@ -64,32 +76,35 @@ const SettingsPage: React.FC = () => {
       ),
       settings: [
         {
-          name: 'Auto-lock',
+          name: 'Auto-lock timeout',
           description: 'Tự động khóa ứng dụng sau thời gian không hoạt động',
-          component: (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                5 phút
-              </span>
-              <span className="px-2 py-1 bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300 text-xs rounded-full">
-                Đã bật
-              </span>
-            </div>
-          ),
+          component: <AutoLockTimeoutSettings className="w-48" />,
         },
         {
           name: 'Clipboard auto-clear',
           description: 'Tự động xóa clipboard sau khi copy mật khẩu',
-          component: (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                15 giây
-              </span>
-              <span className="px-2 py-1 bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300 text-xs rounded-full">
-                Đã bật
-              </span>
-            </div>
-          ),
+          component: <ClipboardTimeoutSettings className="w-48" />,
+        },
+        {
+          name: 'KDF Parameters',
+          description: 'Tùy chỉnh thông số mã hóa key derivation',
+          component: <KDFParametersSettings className="w-64" />,
+        },
+      ],
+    },
+    {
+      title: 'Dữ liệu & Sao lưu',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+      ),
+      settings: [
+        {
+          name: 'Export/Import Vault',
+          description: 'Sao lưu và khôi phục dữ liệu vault',
+          component: <VaultExportImport />,
+          fullWidth: true,
         },
       ],
     },
@@ -202,24 +217,38 @@ const SettingsPage: React.FC = () => {
               
               <div className="space-y-4">
                 {group.settings.map((setting, settingIndex) => (
-                  <div 
+                  <div
                     key={setting.name}
                     className="card p-6 animate-slide-up"
                     style={{ animationDelay: `${(groupIndex * group.settings.length + settingIndex) * 0.05}s` }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-1">
-                          {setting.name}
-                        </h3>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                          {setting.description}
-                        </p>
-                      </div>
-                      <div className="ml-6 flex-shrink-0">
+                    {(setting as any).fullWidth ? (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                            {setting.name}
+                          </h3>
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            {setting.description}
+                          </p>
+                        </div>
                         {setting.component}
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                            {setting.name}
+                          </h3>
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            {setting.description}
+                          </p>
+                        </div>
+                        <div className="ml-6 flex-shrink-0">
+                          {setting.component}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

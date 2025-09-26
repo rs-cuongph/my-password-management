@@ -5,6 +5,8 @@ interface AppState {
   sidebarOpen: boolean;
   theme: 'light' | 'dark' | 'system';
   language: 'en' | 'vi';
+  fontSize: 'normal' | 'large';
+  clipboardAutoClearTimeout: number; // in milliseconds
   isInitialized: boolean;
 }
 
@@ -14,6 +16,8 @@ interface AppActions {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   toggleTheme: () => void;
   setLanguage: (language: 'en' | 'vi') => void;
+  setFontSize: (fontSize: 'normal' | 'large') => void;
+  setClipboardAutoClearTimeout: (timeout: number) => void;
   initializeTheme: () => void;
   getResolvedTheme: () => 'light' | 'dark';
 }
@@ -49,6 +53,8 @@ export const useAppStore = create<AppState & AppActions>()(
         sidebarOpen: false,
         theme: 'system',
         language: 'vi',
+        fontSize: 'normal',
+        clipboardAutoClearTimeout: 15 * 1000, // 15 seconds default
         isInitialized: false,
 
         // Actions
@@ -76,6 +82,12 @@ export const useAppStore = create<AppState & AppActions>()(
 
         setLanguage: (language) =>
           set({ language }, undefined, 'setLanguage'),
+
+        setFontSize: (fontSize) =>
+          set({ fontSize }, undefined, 'setFontSize'),
+
+        setClipboardAutoClearTimeout: (timeout) =>
+          set({ clipboardAutoClearTimeout: timeout }, undefined, 'setClipboardAutoClearTimeout'),
 
         initializeTheme: () => {
           const { theme } = get();
@@ -109,6 +121,8 @@ export const useAppStore = create<AppState & AppActions>()(
         partialize: (state) => ({
           theme: state.theme,
           language: state.language,
+          fontSize: state.fontSize,
+          clipboardAutoClearTimeout: state.clipboardAutoClearTimeout,
         }),
       }
     ),
