@@ -12,7 +12,7 @@ import {
   IsBase64,
   Min,
   Max,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -54,7 +54,8 @@ export class ValidateRecoveryCodeDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/, {
-    message: 'Recovery code must be in format XXXX-XXXX-XXXX-XXXX with valid base32 characters'
+    message:
+      'Recovery code must be in format XXXX-XXXX-XXXX-XXXX with valid base32 characters',
   })
   recoveryCode: string;
 
@@ -76,7 +77,8 @@ export class RecoverDEKDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/, {
-    message: 'Recovery code must be in format XXXX-XXXX-XXXX-XXXX with valid base32 characters'
+    message:
+      'Recovery code must be in format XXXX-XXXX-XXXX-XXXX with valid base32 characters',
   })
   recoveryCode: string;
 

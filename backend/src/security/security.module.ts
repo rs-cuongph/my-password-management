@@ -10,10 +10,19 @@ import { VaultPayloadService } from './services/vault-payload.service';
 import { VaultPayloadController } from './controllers/vault-payload.controller';
 import { RecoveryCodeService } from './services/recovery-code.service';
 import { RecoveryCodeController } from './controllers/recovery-code.controller';
+import { VaultService } from './services/vault.service';
+import { VaultController } from './controllers/vault.controller';
+import { PrismaService } from '../prisma.service';
 
 @Module({
   imports: [ConfigModule],
-  controllers: [SecurityController, DEKController, VaultPayloadController, RecoveryCodeController],
+  controllers: [
+    SecurityController,
+    DEKController,
+    VaultPayloadController,
+    RecoveryCodeController,
+    VaultController,
+  ],
   providers: [
     SecurityService,
     SecurityMiddleware,
@@ -21,6 +30,8 @@ import { RecoveryCodeController } from './controllers/recovery-code.controller';
     KeyRotationService,
     VaultPayloadService,
     RecoveryCodeService,
+    VaultService,
+    PrismaService,
   ],
   exports: [
     SecurityService,
@@ -29,6 +40,7 @@ import { RecoveryCodeController } from './controllers/recovery-code.controller';
     KeyRotationService,
     VaultPayloadService,
     RecoveryCodeService,
+    VaultService,
   ],
 })
 export class SecurityModule {}

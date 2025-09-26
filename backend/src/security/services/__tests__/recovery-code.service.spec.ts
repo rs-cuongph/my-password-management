@@ -32,7 +32,9 @@ describe('RecoveryCodeService', () => {
       const result = await service.generateRecoveryCode();
 
       expect(result).toBeDefined();
-      expect(result.code).toMatch(/^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/);
+      expect(result.code).toMatch(
+        /^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/,
+      );
       expect(result.rawCode).toMatch(/^[A-Z2-7]{32}$/);
       expect(result.salt).toBeDefined();
       expect(result.createdAt).toBeInstanceOf(Date);
@@ -55,7 +57,7 @@ describe('RecoveryCodeService', () => {
 
       const recoveryKey = await service.deriveRecoveryKey(
         recoveryCode.code,
-        recoveryCode.salt
+        recoveryCode.salt,
       );
 
       expect(recoveryKey).toBeInstanceOf(Uint8Array);
@@ -67,12 +69,12 @@ describe('RecoveryCodeService', () => {
 
       const recoveryKey1 = await service.deriveRecoveryKey(
         recoveryCode.code,
-        recoveryCode.salt
+        recoveryCode.salt,
       );
 
       const recoveryKey2 = await service.deriveRecoveryKey(
         recoveryCode.code,
-        recoveryCode.salt
+        recoveryCode.salt,
       );
 
       expect(recoveryKey1).toEqual(recoveryKey2);
@@ -84,12 +86,12 @@ describe('RecoveryCodeService', () => {
 
       const recoveryKey1 = await service.deriveRecoveryKey(
         recoveryCode1.code,
-        recoveryCode1.salt
+        recoveryCode1.salt,
       );
 
       const recoveryKey2 = await service.deriveRecoveryKey(
         recoveryCode2.code,
-        recoveryCode2.salt
+        recoveryCode2.salt,
       );
 
       expect(recoveryKey1).not.toEqual(recoveryKey2);
@@ -98,11 +100,13 @@ describe('RecoveryCodeService', () => {
     it('should reject invalid recovery code formats', async () => {
       const validCode = await service.generateRecoveryCode();
 
-      await expect(service.deriveRecoveryKey('invalid', validCode.salt))
-        .rejects.toThrow('Recovery key derivation failed');
+      await expect(
+        service.deriveRecoveryKey('invalid', validCode.salt),
+      ).rejects.toThrow('Recovery key derivation failed');
 
-      await expect(service.deriveRecoveryKey('XXXX-XXXX-XXXX-XXX1', validCode.salt))
-        .rejects.toThrow('Recovery key derivation failed');
+      await expect(
+        service.deriveRecoveryKey('XXXX-XXXX-XXXX-XXX1', validCode.salt),
+      ).rejects.toThrow('Recovery key derivation failed');
     });
   });
 
@@ -126,8 +130,14 @@ describe('RecoveryCodeService', () => {
       const dek = sodium.randombytes_buf(32);
       const recoveryKey = sodium.randombytes_buf(32);
 
-      const wrappedDEK1 = await service.wrapDEKWithRecoveryKey(dek, recoveryKey);
-      const wrappedDEK2 = await service.wrapDEKWithRecoveryKey(dek, recoveryKey);
+      const wrappedDEK1 = await service.wrapDEKWithRecoveryKey(
+        dek,
+        recoveryKey,
+      );
+      const wrappedDEK2 = await service.wrapDEKWithRecoveryKey(
+        dek,
+        recoveryKey,
+      );
 
       // Should have different nonces and therefore different ciphertexts
       expect(wrappedDEK1.nonce).not.toBe(wrappedDEK2.nonce);
@@ -140,8 +150,14 @@ describe('RecoveryCodeService', () => {
       const originalDEK = sodium.randombytes_buf(32);
       const recoveryKey = sodium.randombytes_buf(32);
 
-      const wrappedDEK = await service.wrapDEKWithRecoveryKey(originalDEK, recoveryKey);
-      const result = await service.unwrapDEKWithRecoveryKey(wrappedDEK, recoveryKey);
+      const wrappedDEK = await service.wrapDEKWithRecoveryKey(
+        originalDEK,
+        recoveryKey,
+      );
+      const result = await service.unwrapDEKWithRecoveryKey(
+        wrappedDEK,
+        recoveryKey,
+      );
 
       expect(result.success).toBe(true);
       expect(result.dek).toEqual(originalDEK);
@@ -152,8 +168,14 @@ describe('RecoveryCodeService', () => {
       const recoveryKey = sodium.randombytes_buf(32);
       const wrongRecoveryKey = sodium.randombytes_buf(32);
 
-      const wrappedDEK = await service.wrapDEKWithRecoveryKey(originalDEK, recoveryKey);
-      const result = await service.unwrapDEKWithRecoveryKey(wrappedDEK, wrongRecoveryKey);
+      const wrappedDEK = await service.wrapDEKWithRecoveryKey(
+        originalDEK,
+        recoveryKey,
+      );
+      const result = await service.unwrapDEKWithRecoveryKey(
+        wrappedDEK,
+        wrongRecoveryKey,
+      );
 
       expect(result.success).toBe(false);
       expect(result.dek.length).toBe(0);
@@ -163,15 +185,23 @@ describe('RecoveryCodeService', () => {
       const originalDEK = sodium.randombytes_buf(32);
       const recoveryKey = sodium.randombytes_buf(32);
 
-      const wrappedDEK = await service.wrapDEKWithRecoveryKey(originalDEK, recoveryKey);
+      const wrappedDEK = await service.wrapDEKWithRecoveryKey(
+        originalDEK,
+        recoveryKey,
+      );
 
       // Corrupt the wrapped DEK
       const corruptedWrappedDEK = {
         ...wrappedDEK,
-        encryptedDEK: Buffer.from(sodium.randombytes_buf(32)).toString('base64')
+        encryptedDEK: Buffer.from(sodium.randombytes_buf(32)).toString(
+          'base64',
+        ),
       };
 
-      const result = await service.unwrapDEKWithRecoveryKey(corruptedWrappedDEK, recoveryKey);
+      const result = await service.unwrapDEKWithRecoveryKey(
+        corruptedWrappedDEK,
+        recoveryKey,
+      );
 
       expect(result.success).toBe(false);
     });
@@ -192,12 +222,12 @@ describe('RecoveryCodeService', () => {
       // Verify the recovery code can unwrap the DEK
       const recoveryKey = await service.deriveRecoveryKey(
         result.recoveryCode.code,
-        result.recoveryCode.salt
+        result.recoveryCode.salt,
       );
 
       const unwrapResult = await service.unwrapDEKWithRecoveryKey(
         result.wrappedDEK,
-        recoveryKey
+        recoveryKey,
       );
 
       expect(unwrapResult.success).toBe(true);
@@ -211,7 +241,7 @@ describe('RecoveryCodeService', () => {
 
       const result = await service.validateRecoveryCode(
         recoveryCode.code,
-        recoveryCode.salt
+        recoveryCode.salt,
       );
 
       expect(result.valid).toBe(true);
@@ -224,7 +254,7 @@ describe('RecoveryCodeService', () => {
 
       const result = await service.validateRecoveryCode(
         'INVALID-CODE-FORMAT-XXXX',
-        validCode.salt
+        validCode.salt,
       );
 
       expect(result.valid).toBe(false);
@@ -236,7 +266,7 @@ describe('RecoveryCodeService', () => {
 
       const result = await service.validateRecoveryCode(
         validCode.code,
-        'invalid-salt'
+        'invalid-salt',
       );
 
       expect(result.valid).toBe(false);
@@ -250,25 +280,26 @@ describe('RecoveryCodeService', () => {
       const originalDEK = sodium.randombytes_buf(32);
 
       // Step 2: Generate recovery code system
-      const recoverySystem = await service.generateRecoveryCodeForDEK(originalDEK);
+      const recoverySystem =
+        await service.generateRecoveryCodeForDEK(originalDEK);
 
       // Step 3: Validate recovery code (as user would enter it)
       const validation = await service.validateRecoveryCode(
         recoverySystem.recoveryCode.code,
-        recoverySystem.recoveryCode.salt
+        recoverySystem.recoveryCode.salt,
       );
       expect(validation.valid).toBe(true);
 
       // Step 4: Derive recovery key
       const recoveryKey = await service.deriveRecoveryKey(
         recoverySystem.recoveryCode.code,
-        recoverySystem.recoveryCode.salt
+        recoverySystem.recoveryCode.salt,
       );
 
       // Step 5: Unwrap DEK using recovery key
       const unwrapResult = await service.unwrapDEKWithRecoveryKey(
         recoverySystem.wrappedDEK,
-        recoveryKey
+        recoveryKey,
       );
 
       expect(unwrapResult.success).toBe(true);
@@ -278,18 +309,20 @@ describe('RecoveryCodeService', () => {
     it('should fail recovery workflow with wrong recovery code', async () => {
       // Generate two different recovery systems
       const originalDEK = sodium.randombytes_buf(32);
-      const recoverySystem1 = await service.generateRecoveryCodeForDEK(originalDEK);
-      const recoverySystem2 = await service.generateRecoveryCodeForDEK(originalDEK);
+      const recoverySystem1 =
+        await service.generateRecoveryCodeForDEK(originalDEK);
+      const recoverySystem2 =
+        await service.generateRecoveryCodeForDEK(originalDEK);
 
       // Try to use recovery code from system2 to unwrap DEK from system1
       const recoveryKey = await service.deriveRecoveryKey(
         recoverySystem2.recoveryCode.code,
-        recoverySystem2.recoveryCode.salt
+        recoverySystem2.recoveryCode.salt,
       );
 
       const unwrapResult = await service.unwrapDEKWithRecoveryKey(
         recoverySystem1.wrappedDEK,
-        recoveryKey
+        recoveryKey,
       );
 
       expect(unwrapResult.success).toBe(false);
@@ -299,16 +332,18 @@ describe('RecoveryCodeService', () => {
   describe('security properties', () => {
     it('should generate cryptographically secure recovery codes', async () => {
       const codes = await Promise.all(
-        Array(100).fill(null).map(() => service.generateRecoveryCode())
+        Array(100)
+          .fill(null)
+          .map(() => service.generateRecoveryCode()),
       );
 
-      const uniqueCodes = new Set(codes.map(c => c.code));
+      const uniqueCodes = new Set(codes.map((c) => c.code));
       expect(uniqueCodes.size).toBe(100); // All codes should be unique
 
       // Check that codes don't follow predictable patterns
-      const sortedCodes = codes.map(c => c.code).sort();
+      const sortedCodes = codes.map((c) => c.code).sort();
       for (let i = 1; i < sortedCodes.length; i++) {
-        expect(sortedCodes[i]).not.toBe(sortedCodes[i-1]);
+        expect(sortedCodes[i]).not.toBe(sortedCodes[i - 1]);
       }
     });
 
@@ -324,17 +359,21 @@ describe('RecoveryCodeService', () => {
 
     it('should use unique salts for each recovery code', async () => {
       const codes = await Promise.all(
-        Array(10).fill(null).map(() => service.generateRecoveryCode())
+        Array(10)
+          .fill(null)
+          .map(() => service.generateRecoveryCode()),
       );
 
-      const uniqueSalts = new Set(codes.map(c => c.salt));
+      const uniqueSalts = new Set(codes.map((c) => c.salt));
       expect(uniqueSalts.size).toBe(10); // All salts should be unique
     });
 
     it('should properly format recovery codes with hyphens', async () => {
       const recoveryCode = await service.generateRecoveryCode();
 
-      expect(recoveryCode.code).toMatch(/^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/);
+      expect(recoveryCode.code).toMatch(
+        /^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/,
+      );
       expect(recoveryCode.rawCode.length).toBe(32);
       expect(recoveryCode.code.replace(/-/g, '')).toBe(recoveryCode.rawCode);
     });

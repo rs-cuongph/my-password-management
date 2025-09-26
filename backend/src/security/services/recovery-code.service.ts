@@ -5,7 +5,7 @@ import {
   RecoveryCode,
   GenerateRecoveryCodeResult,
   RecoveryCodeWrappedDEK,
-  RecoveryKeyDerivation
+  RecoveryKeyDerivation,
 } from '../interfaces/recovery-code.interface';
 
 @Injectable()
@@ -81,7 +81,9 @@ export class RecoveryCodeService {
       const formattedCode = `${code.substring(0, 8)}-${code.substring(8, 16)}-${code.substring(16, 24)}-${code.substring(24, 32)}`;
 
       // Generate recovery salt for key derivation
-      const recoverySalt = this.sodium!.randombytes_buf(RecoveryCodeService.RECOVERY_SALT_SIZE);
+      const recoverySalt = this.sodium!.randombytes_buf(
+        RecoveryCodeService.RECOVERY_SALT_SIZE,
+      );
 
       this.logger.log('Recovery code generated successfully');
 
@@ -90,7 +92,7 @@ export class RecoveryCodeService {
         rawCode: code, // Without hyphens for cryptographic operations
         salt: Buffer.from(recoverySalt).toString('base64'),
         createdAt: new Date(),
-        version: RecoveryCodeService.CURRENT_VERSION
+        version: RecoveryCodeService.CURRENT_VERSION,
       };
     } catch (error) {
       this.logger.error('Failed to generate recovery code', error);
@@ -104,7 +106,7 @@ export class RecoveryCodeService {
   async deriveRecoveryKey(
     recoveryCode: string,
     salt: string,
-    params?: RecoveryKeyDerivation
+    params?: RecoveryKeyDerivation,
   ): Promise<Uint8Array> {
     await this.ensureSodiumReady();
 
@@ -121,10 +123,13 @@ export class RecoveryCodeService {
       const password = Buffer.from(cleanCode, 'utf8');
 
       const derivationParams = {
-        opsLimit: params?.opsLimit || this.sodium!.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-        memLimit: params?.memLimit || this.sodium!.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-        algorithm: params?.algorithm || this.sodium!.crypto_pwhash_ALG_ARGON2ID13,
-        ...params
+        opsLimit:
+          params?.opsLimit || this.sodium!.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+        memLimit:
+          params?.memLimit || this.sodium!.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+        algorithm:
+          params?.algorithm || this.sodium!.crypto_pwhash_ALG_ARGON2ID13,
+        ...params,
       };
 
       const derivedKey = this.sodium!.crypto_pwhash(
@@ -133,7 +138,7 @@ export class RecoveryCodeService {
         saltBuffer,
         derivationParams.opsLimit,
         derivationParams.memLimit,
-        derivationParams.algorithm
+        derivationParams.algorithm,
       );
 
       this.logger.log('Recovery key derived successfully');
@@ -149,22 +154,25 @@ export class RecoveryCodeService {
    */
   async wrapDEKWithRecoveryKey(
     dek: Uint8Array,
-    recoveryKey: Uint8Array
+    recoveryKey: Uint8Array,
   ): Promise<RecoveryCodeWrappedDEK> {
     await this.ensureSodiumReady();
 
     try {
       // Generate random nonce
-      const nonce = this.sodium!.randombytes_buf(RecoveryCodeService.NONCE_SIZE);
+      const nonce = this.sodium!.randombytes_buf(
+        RecoveryCodeService.NONCE_SIZE,
+      );
 
       // Encrypt DEK using XChaCha20-Poly1305
-      const ciphertext = this.sodium!.crypto_aead_xchacha20poly1305_ietf_encrypt(
-        dek,
-        null, // No additional data
-        null, // No secret nonce
-        nonce,
-        recoveryKey
-      );
+      const ciphertext =
+        this.sodium!.crypto_aead_xchacha20poly1305_ietf_encrypt(
+          dek,
+          null, // No additional data
+          null, // No secret nonce
+          nonce,
+          recoveryKey,
+        );
 
       // Split ciphertext and tag
       const encryptedDEK = ciphertext.slice(0, -16);
@@ -178,8 +186,8 @@ export class RecoveryCodeService {
           version: RecoveryCodeService.CURRENT_VERSION,
           createdAt: new Date(),
           algorithm: 'xchacha20-poly1305',
-          purpose: 'recovery'
-        }
+          purpose: 'recovery',
+        },
       };
 
       this.logger.log('DEK wrapped with recovery key successfully');
@@ -200,7 +208,7 @@ export class RecoveryCodeService {
    */
   async unwrapDEKWithRecoveryKey(
     wrappedDEK: RecoveryCodeWrappedDEK,
-    recoveryKey: Uint8Array
+    recoveryKey: Uint8Array,
   ): Promise<{ dek: Uint8Array; success: boolean }> {
     await this.ensureSodiumReady();
 
@@ -226,11 +234,13 @@ export class RecoveryCodeService {
         ciphertext,
         null, // No additional data
         nonce,
-        recoveryKey
+        recoveryKey,
       );
 
       if (!dek) {
-        throw new Error('Decryption failed - invalid recovery key or corrupted data');
+        throw new Error(
+          'Decryption failed - invalid recovery key or corrupted data',
+        );
       }
 
       this.logger.log('DEK unwrapped with recovery key successfully');
@@ -249,7 +259,9 @@ export class RecoveryCodeService {
   /**
    * Generate complete recovery code system (code + wrapped DEK)
    */
-  async generateRecoveryCodeForDEK(dek: Uint8Array): Promise<GenerateRecoveryCodeResult> {
+  async generateRecoveryCodeForDEK(
+    dek: Uint8Array,
+  ): Promise<GenerateRecoveryCodeResult> {
     try {
       // Generate recovery code and salt
       const recoveryCode = await this.generateRecoveryCode();
@@ -257,7 +269,7 @@ export class RecoveryCodeService {
       // Derive recovery key from recovery code
       const recoveryKey = await this.deriveRecoveryKey(
         recoveryCode.code,
-        recoveryCode.salt
+        recoveryCode.salt,
       );
 
       // Wrap DEK with recovery key
@@ -273,11 +285,14 @@ export class RecoveryCodeService {
           'This code can be used to access your vault if you forget your master password',
           'Never share this recovery code with anyone',
           'Consider storing it offline (written down) in a secure place',
-          'If this code is compromised, generate a new one immediately'
-        ]
+          'If this code is compromised, generate a new one immediately',
+        ],
       };
     } catch (error) {
-      this.logger.error('Failed to generate recovery code system for DEK', error);
+      this.logger.error(
+        'Failed to generate recovery code system for DEK',
+        error,
+      );
       throw new Error('Recovery code system generation failed');
     }
   }
@@ -287,7 +302,7 @@ export class RecoveryCodeService {
    */
   async validateRecoveryCode(
     recoveryCode: string,
-    salt: string
+    salt: string,
   ): Promise<{ valid: boolean; key?: Uint8Array }> {
     try {
       const recoveryKey = await this.deriveRecoveryKey(recoveryCode, salt);

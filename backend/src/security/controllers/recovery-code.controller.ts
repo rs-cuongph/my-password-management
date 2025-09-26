@@ -8,9 +8,14 @@ import {
   HttpStatus,
   HttpException,
   UseInterceptors,
-  ClassSerializerInterceptor
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RecoveryCodeService } from '../services/recovery-code.service';
@@ -21,7 +26,7 @@ import {
   GenerateRecoveryCodeResponseDto,
   ValidateRecoveryCodeResponseDto,
   RecoverDEKResponseDto,
-  RecoveryCodeStatsResponseDto
+  RecoveryCodeStatsResponseDto,
 } from '../dto/recovery-code.dto';
 
 @ApiTags('Recovery Code')
@@ -38,7 +43,7 @@ export class RecoveryCodeController {
     successfulRecoveries: 0,
     failedRecoveries: 0,
     lastGenerated: null as Date | null,
-    lastRecoveryAttempt: null as Date | null
+    lastRecoveryAttempt: null as Date | null,
   };
 
   constructor(private readonly recoveryCodeService: RecoveryCodeService) {}
@@ -46,24 +51,25 @@ export class RecoveryCodeController {
   @Post('generate')
   @ApiOperation({
     summary: 'Generate recovery code for DEK',
-    description: 'Creates a cryptographically secure recovery code that can be used to recover the DEK without the master password. The recovery code should be stored securely offline.'
+    description:
+      'Creates a cryptographically secure recovery code that can be used to recover the DEK without the master password. The recovery code should be stored securely offline.',
   })
   @ApiResponse({
     status: 200,
     description: 'Recovery code generated successfully',
-    type: GenerateRecoveryCodeResponseDto
+    type: GenerateRecoveryCodeResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid DEK provided'
+    description: 'Invalid DEK provided',
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many recovery code generation requests'
+    description: 'Too many recovery code generation requests',
   })
   @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 per 5 minutes - very restrictive
   async generateRecoveryCode(
-    @Body() generateDto: GenerateRecoveryCodeDto
+    @Body() generateDto: GenerateRecoveryCodeDto,
   ): Promise<GenerateRecoveryCodeResponseDto> {
     try {
       this.logger.log('Recovery code generation requested');
@@ -78,7 +84,8 @@ export class RecoveryCodeController {
       }
 
       // Generate recovery code system
-      const result = await this.recoveryCodeService.generateRecoveryCodeForDEK(dek);
+      const result =
+        await this.recoveryCodeService.generateRecoveryCodeForDEK(dek);
 
       // Update statistics
       this.stats.totalGenerated++;
@@ -90,7 +97,7 @@ export class RecoveryCodeController {
           salt: result.recoveryCode.salt,
           createdAt: result.recoveryCode.createdAt.toISOString(),
           version: result.recoveryCode.version,
-          instructions: result.instructions
+          instructions: result.instructions,
         },
         wrappedDEK: {
           encryptedDEK: result.wrappedDEK.encryptedDEK,
@@ -100,11 +107,12 @@ export class RecoveryCodeController {
             version: result.wrappedDEK.metadata.version,
             createdAt: result.wrappedDEK.metadata.createdAt.toISOString(),
             algorithm: result.wrappedDEK.metadata.algorithm,
-            purpose: result.wrappedDEK.metadata.purpose
-          }
+            purpose: result.wrappedDEK.metadata.purpose,
+          },
         },
         success: true,
-        message: 'Recovery code generated successfully. Store it securely offline.'
+        message:
+          'Recovery code generated successfully. Store it securely offline.',
       };
 
       this.logger.log('Recovery code generated successfully');
@@ -113,7 +121,7 @@ export class RecoveryCodeController {
       this.logger.error('Recovery code generation failed', error);
       throw new HttpException(
         error.message || 'Recovery code generation failed',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -121,47 +129,55 @@ export class RecoveryCodeController {
   @Post('validate')
   @ApiOperation({
     summary: 'Validate recovery code format and derivation',
-    description: 'Validates that a recovery code is properly formatted and can derive a recovery key. Does not unwrap any DEK.'
+    description:
+      'Validates that a recovery code is properly formatted and can derive a recovery key. Does not unwrap any DEK.',
   })
   @ApiResponse({
     status: 200,
     description: 'Recovery code validation result',
-    type: ValidateRecoveryCodeResponseDto
+    type: ValidateRecoveryCodeResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid recovery code format'
+    description: 'Invalid recovery code format',
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many validation requests'
+    description: 'Too many validation requests',
   })
   @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 per 5 minutes
   async validateRecoveryCode(
-    @Body() validateDto: ValidateRecoveryCodeDto
+    @Body() validateDto: ValidateRecoveryCodeDto,
   ): Promise<ValidateRecoveryCodeResponseDto> {
     try {
       this.logger.log('Recovery code validation requested');
 
-      const validationResult = await this.recoveryCodeService.validateRecoveryCode(
-        validateDto.recoveryCode,
-        validateDto.salt
-      );
+      const validationResult =
+        await this.recoveryCodeService.validateRecoveryCode(
+          validateDto.recoveryCode,
+          validateDto.salt,
+        );
 
       const response: ValidateRecoveryCodeResponseDto = {
         valid: validationResult.valid,
-        error: validationResult.valid ? undefined : 'Invalid recovery code format or derivation failed',
-        message: validationResult.valid ? 'Recovery code is valid' : 'Recovery code validation failed'
+        error: validationResult.valid
+          ? undefined
+          : 'Invalid recovery code format or derivation failed',
+        message: validationResult.valid
+          ? 'Recovery code is valid'
+          : 'Recovery code validation failed',
       };
 
-      this.logger.log(`Recovery code validation: ${validationResult.valid ? 'success' : 'failed'}`);
+      this.logger.log(
+        `Recovery code validation: ${validationResult.valid ? 'success' : 'failed'}`,
+      );
       return response;
     } catch (error) {
       this.logger.error('Recovery code validation failed', error);
       return {
         valid: false,
         error: error.message || 'Validation failed',
-        message: 'Recovery code validation encountered an error'
+        message: 'Recovery code validation encountered an error',
       };
     }
   }
@@ -169,24 +185,25 @@ export class RecoveryCodeController {
   @Post('recover-dek')
   @ApiOperation({
     summary: 'Recover DEK using recovery code',
-    description: 'Uses a recovery code to unwrap and recover the DEK. This is the main recovery flow when the master password is forgotten.'
+    description:
+      'Uses a recovery code to unwrap and recover the DEK. This is the main recovery flow when the master password is forgotten.',
   })
   @ApiResponse({
     status: 200,
     description: 'DEK recovery result',
-    type: RecoverDEKResponseDto
+    type: RecoverDEKResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid recovery parameters'
+    description: 'Invalid recovery parameters',
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many recovery attempts'
+    description: 'Too many recovery attempts',
   })
   @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 per 15 minutes - very restrictive for security
   async recoverDEK(
-    @Body() recoverDto: RecoverDEKDto
+    @Body() recoverDto: RecoverDEKDto,
   ): Promise<RecoverDEKResponseDto> {
     let recoverySuccessful = false;
 
@@ -197,7 +214,10 @@ export class RecoveryCodeController {
       this.stats.lastRecoveryAttempt = new Date();
 
       // Step 1: Validate recovery code format
-      const codeFormatValid = /^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/.test(recoverDto.recoveryCode);
+      const codeFormatValid =
+        /^[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}-[A-Z2-7]{8}$/.test(
+          recoverDto.recoveryCode,
+        );
       if (!codeFormatValid) {
         this.stats.failedRecoveries++;
         return {
@@ -207,8 +227,8 @@ export class RecoveryCodeController {
             codeFormatValid: false,
             saltValid: false,
             keyDerivationSucceeded: false,
-            unwrappingSucceeded: false
-          }
+            unwrappingSucceeded: false,
+          },
         };
       }
 
@@ -229,8 +249,8 @@ export class RecoveryCodeController {
             codeFormatValid: true,
             saltValid: false,
             keyDerivationSucceeded: false,
-            unwrappingSucceeded: false
-          }
+            unwrappingSucceeded: false,
+          },
         };
       }
 
@@ -242,7 +262,7 @@ export class RecoveryCodeController {
         recoveryKey = await this.recoveryCodeService.deriveRecoveryKey(
           recoverDto.recoveryCode,
           recoverDto.salt,
-          recoverDto.derivationParams
+          recoverDto.derivationParams,
         );
         keyDerivationSucceeded = true;
       } catch (error) {
@@ -254,8 +274,8 @@ export class RecoveryCodeController {
             codeFormatValid: true,
             saltValid: true,
             keyDerivationSucceeded: false,
-            unwrappingSucceeded: false
-          }
+            unwrappingSucceeded: false,
+          },
         };
       }
 
@@ -268,14 +288,15 @@ export class RecoveryCodeController {
           version: 1,
           createdAt: new Date(),
           algorithm: 'xchacha20-poly1305' as const,
-          purpose: 'recovery' as const
-        }
+          purpose: 'recovery' as const,
+        },
       };
 
-      const unwrapResult = await this.recoveryCodeService.unwrapDEKWithRecoveryKey(
-        wrappedDEK,
-        recoveryKey
-      );
+      const unwrapResult =
+        await this.recoveryCodeService.unwrapDEKWithRecoveryKey(
+          wrappedDEK,
+          recoveryKey,
+        );
 
       if (unwrapResult.success) {
         recoverySuccessful = true;
@@ -289,20 +310,21 @@ export class RecoveryCodeController {
             codeFormatValid: true,
             saltValid: true,
             keyDerivationSucceeded: true,
-            unwrappingSucceeded: true
-          }
+            unwrappingSucceeded: true,
+          },
         };
       } else {
         this.stats.failedRecoveries++;
         return {
           success: false,
-          error: 'DEK unwrapping failed - invalid recovery code or corrupted data',
+          error:
+            'DEK unwrapping failed - invalid recovery code or corrupted data',
           context: {
             codeFormatValid: true,
             saltValid: true,
             keyDerivationSucceeded: true,
-            unwrappingSucceeded: false
-          }
+            unwrappingSucceeded: false,
+          },
         };
       }
     } catch (error) {
@@ -316,8 +338,8 @@ export class RecoveryCodeController {
           codeFormatValid: false,
           saltValid: false,
           keyDerivationSucceeded: false,
-          unwrappingSucceeded: false
-        }
+          unwrappingSucceeded: false,
+        },
       };
     } finally {
       if (recoverySuccessful) {
@@ -331,18 +353,23 @@ export class RecoveryCodeController {
   @Get('stats')
   @ApiOperation({
     summary: 'Get recovery code statistics',
-    description: 'Returns statistics about recovery code generation and usage for monitoring purposes.'
+    description:
+      'Returns statistics about recovery code generation and usage for monitoring purposes.',
   })
   @ApiResponse({
     status: 200,
     description: 'Recovery code statistics',
-    type: RecoveryCodeStatsResponseDto
+    type: RecoveryCodeStatsResponseDto,
   })
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 per minute
   async getRecoveryCodeStats(): Promise<RecoveryCodeStatsResponseDto> {
     try {
-      const totalAttempts = this.stats.successfulRecoveries + this.stats.failedRecoveries;
-      const successRate = totalAttempts > 0 ? (this.stats.successfulRecoveries / totalAttempts) * 100 : 0;
+      const totalAttempts =
+        this.stats.successfulRecoveries + this.stats.failedRecoveries;
+      const successRate =
+        totalAttempts > 0
+          ? (this.stats.successfulRecoveries / totalAttempts) * 100
+          : 0;
 
       return {
         totalGenerated: this.stats.totalGenerated,
@@ -350,13 +377,13 @@ export class RecoveryCodeController {
         failedRecoveries: this.stats.failedRecoveries,
         lastGenerated: this.stats.lastGenerated?.toISOString(),
         lastRecoveryAttempt: this.stats.lastRecoveryAttempt?.toISOString(),
-        successRate: Math.round(successRate * 100) / 100 // Round to 2 decimal places
+        successRate: Math.round(successRate * 100) / 100, // Round to 2 decimal places
       };
     } catch (error) {
       this.logger.error('Failed to get recovery code stats', error);
       throw new HttpException(
         'Failed to retrieve statistics',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
