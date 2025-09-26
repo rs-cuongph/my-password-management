@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DEKService } from '../dek.service';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('DEKService', () => {
   let service: DEKService;
@@ -75,7 +78,7 @@ describe('DEKService', () => {
       expect(wrapped.tag).toBeDefined();
       expect(wrapped.metadata.version).toBe(1);
       expect(wrapped.metadata.algorithm).toBe('xchacha20-poly1305');
-      
+
       // Verify base64 encoding
       expect(() => Buffer.from(wrapped.encryptedDEK, 'base64')).not.toThrow();
       expect(() => Buffer.from(wrapped.nonce, 'base64')).not.toThrow();
@@ -114,17 +117,17 @@ describe('DEKService', () => {
     it('should throw error for invalid DEK size', async () => {
       const invalidDEK = new Uint8Array(16); // Wrong size
 
-      await expect(
-        service.wrapDEK(invalidDEK, testMasterKey),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.wrapDEK(invalidDEK, testMasterKey)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw error for invalid master key size', async () => {
       const invalidMasterKey = new Uint8Array(16); // Wrong size
 
-      await expect(
-        service.wrapDEK(testDEK, invalidMasterKey),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.wrapDEK(testDEK, invalidMasterKey)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw error for invalid nonce size', async () => {
@@ -162,10 +165,14 @@ describe('DEKService', () => {
 
     it('should unwrap DEK with matching AAD', async () => {
       const aad = 'test-aad';
-      const wrappedWithAAD = await service.wrapDEK(testDEK, testMasterKey, { aad });
-      
-      const result = await service.unwrapDEK(wrappedWithAAD, testMasterKey, { aad });
-      
+      const wrappedWithAAD = await service.wrapDEK(testDEK, testMasterKey, {
+        aad,
+      });
+
+      const result = await service.unwrapDEK(wrappedWithAAD, testMasterKey, {
+        aad,
+      });
+
       expect(result.dek).toEqual(testDEK);
     });
 
@@ -181,7 +188,9 @@ describe('DEKService', () => {
 
     it('should fail with wrong AAD', async () => {
       const aad = 'test-aad';
-      const wrappedWithAAD = await service.wrapDEK(testDEK, testMasterKey, { aad });
+      const wrappedWithAAD = await service.wrapDEK(testDEK, testMasterKey, {
+        aad,
+      });
 
       await expect(
         service.unwrapDEK(wrappedWithAAD, testMasterKey, { aad: 'wrong-aad' }),
@@ -237,7 +246,9 @@ describe('DEKService', () => {
     it('should detect rotation needed for old versions', async () => {
       const oldVersionDEK = await service.generateDEK({ version: 0 });
       const masterKey = await service.generateMasterKey();
-      const wrapped = await service.wrapDEK(oldVersionDEK.dek, masterKey, { version: 0 });
+      const wrapped = await service.wrapDEK(oldVersionDEK.dek, masterKey, {
+        version: 0,
+      });
 
       const info = service.getKeyRotationInfo([wrapped]);
 
@@ -304,7 +315,7 @@ describe('DEKService', () => {
       service.clearMemory(testData);
 
       expect(testData).not.toEqual(originalData);
-      expect(testData.every(byte => byte === 0)).toBe(true);
+      expect(testData.every((byte) => byte === 0)).toBe(true);
     });
 
     it('should clear multiple arrays', () => {
@@ -313,8 +324,8 @@ describe('DEKService', () => {
 
       service.clearMemory([testData1, testData2]);
 
-      expect(testData1.every(byte => byte === 0)).toBe(true);
-      expect(testData2.every(byte => byte === 0)).toBe(true);
+      expect(testData1.every((byte) => byte === 0)).toBe(true);
+      expect(testData2.every((byte) => byte === 0)).toBe(true);
     });
 
     it('should handle empty arrays gracefully', () => {

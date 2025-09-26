@@ -26,7 +26,7 @@ export class SecurityExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         message = (exceptionResponse as any).message || exception.message;
         errorCode = (exceptionResponse as any).error || 'HTTP_EXCEPTION';
@@ -73,7 +73,9 @@ export class SecurityExceptionFilter implements ExceptionFilter {
     response.status(status).json(errorResponse);
   }
 
-  private handlePrismaError(error: Prisma.PrismaClientKnownRequestError): string {
+  private handlePrismaError(
+    error: Prisma.PrismaClientKnownRequestError,
+  ): string {
     switch (error.code) {
       case 'P2002':
         return 'A record with this information already exists';

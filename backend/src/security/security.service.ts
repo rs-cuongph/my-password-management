@@ -6,8 +6,11 @@ export class SecurityService {
   constructor(private configService: ConfigService) {}
 
   getCorsConfig() {
-    const allowedOrigins = this.configService.get<string>('CORS_ORIGINS')?.split(',') || ['http://localhost:3000'];
-    const isDevelopment = this.configService.get<string>('NODE_ENV') === 'development';
+    const allowedOrigins = this.configService
+      .get<string>('CORS_ORIGINS')
+      ?.split(',') || ['http://localhost:3000'];
+    const isDevelopment =
+      this.configService.get<string>('NODE_ENV') === 'development';
 
     return {
       origin: isDevelopment ? true : allowedOrigins,
@@ -67,7 +70,8 @@ export class SecurityService {
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 5, // limit each IP to 5 requests per windowMs for sensitive endpoints
       message: {
-        error: 'Too many attempts for this sensitive operation, please try again later.',
+        error:
+          'Too many attempts for this sensitive operation, please try again later.',
         statusCode: 429,
       },
       standardHeaders: true,

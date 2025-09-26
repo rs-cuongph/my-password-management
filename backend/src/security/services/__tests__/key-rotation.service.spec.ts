@@ -67,16 +67,22 @@ describe('KeyRotationService', () => {
       // Create test DEKs with different versions and ages
       const dek1 = await dekService.generateDEK({ version: 1 });
       const dek2 = await dekService.generateDEK({ version: 0 }); // Old version
-      
+
       const masterKey1 = await dekService.generateMasterKey();
       const masterKey2 = await dekService.generateMasterKey();
       masterKeys = [masterKey1, masterKey2];
 
-      const wrapped1 = await dekService.wrapDEK(dek1.dek, masterKey1, { version: 1 });
-      const wrapped2 = await dekService.wrapDEK(dek2.dek, masterKey2, { version: 0 });
+      const wrapped1 = await dekService.wrapDEK(dek1.dek, masterKey1, {
+        version: 1,
+      });
+      const wrapped2 = await dekService.wrapDEK(dek2.dek, masterKey2, {
+        version: 0,
+      });
 
       // Make the second DEK appear old
-      wrapped2.metadata.createdAt = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000); // 400 days ago
+      wrapped2.metadata.createdAt = new Date(
+        Date.now() - 400 * 24 * 60 * 60 * 1000,
+      ); // 400 days ago
 
       testWrappedDEKs = [wrapped1, wrapped2];
 
@@ -93,7 +99,7 @@ describe('KeyRotationService', () => {
       });
 
       const ageBasedRecommendations = analysis.recommendations.filter(
-        r => r.type === 'age-based',
+        (r) => r.type === 'age-based',
       );
       expect(ageBasedRecommendations).toHaveLength(1);
       expect(ageBasedRecommendations[0].priority).toBe('high');
@@ -103,10 +109,12 @@ describe('KeyRotationService', () => {
       const analysis = service.analyzeRotationRequirements(testWrappedDEKs);
 
       const versionBasedRecommendations = analysis.recommendations.filter(
-        r => r.type === 'version-based',
+        (r) => r.type === 'version-based',
       );
       expect(versionBasedRecommendations).toHaveLength(1);
-      expect(versionBasedRecommendations[0].wrappedDEK.metadata.version).toBe(0);
+      expect(versionBasedRecommendations[0].wrappedDEK.metadata.version).toBe(
+        0,
+      );
       expect(versionBasedRecommendations[0].recommendedVersion).toBe(1);
     });
 
@@ -134,12 +142,16 @@ describe('KeyRotationService', () => {
       // Create test DEKs that need rotation
       const dek1 = await dekService.generateDEK({ version: 0 });
       const dek2 = await dekService.generateDEK({ version: 0 });
-      
+
       const oldMasterKey = await dekService.generateMasterKey();
       const newMasterKey = await dekService.generateMasterKey();
 
-      const wrapped1 = await dekService.wrapDEK(dek1.dek, oldMasterKey, { version: 0 });
-      const wrapped2 = await dekService.wrapDEK(dek2.dek, oldMasterKey, { version: 0 });
+      const wrapped1 = await dekService.wrapDEK(dek1.dek, oldMasterKey, {
+        version: 0,
+      });
+      const wrapped2 = await dekService.wrapDEK(dek2.dek, oldMasterKey, {
+        version: 0,
+      });
 
       testWrappedDEKs = [wrapped1, wrapped2];
 
@@ -151,11 +163,14 @@ describe('KeyRotationService', () => {
     });
 
     afterEach(() => {
-      masterKeyMapping.forEach(key => dekService.clearMemory(key));
+      masterKeyMapping.forEach((key) => dekService.clearMemory(key));
     });
 
     it('should generate rotation plan successfully', () => {
-      const plan = service.generateRotationPlan(testWrappedDEKs, masterKeyMapping);
+      const plan = service.generateRotationPlan(
+        testWrappedDEKs,
+        masterKeyMapping,
+      );
 
       expect(plan.totalDEKs).toBe(2);
       expect(plan.tasksRequired).toBe(2);
@@ -163,7 +178,7 @@ describe('KeyRotationService', () => {
       expect(plan.estimatedDuration).toBeGreaterThan(0);
 
       // All tasks should target version 1
-      plan.tasks.forEach(task => {
+      plan.tasks.forEach((task) => {
         expect(task.targetVersion).toBe(1);
         expect(task.wrappedDEK.metadata.version).toBe(0);
       });
@@ -174,19 +189,29 @@ describe('KeyRotationService', () => {
       incompleteMasterKeyMapping.set(1, masterKeyMapping.get(1)!); // Missing key for version 0
 
       expect(() =>
-        service.generateRotationPlan(testWrappedDEKs, incompleteMasterKeyMapping),
+        service.generateRotationPlan(
+          testWrappedDEKs,
+          incompleteMasterKeyMapping,
+        ),
       ).toThrow('Master key for version 0 not provided');
     });
 
     it('should handle DEKs that do not need rotation', async () => {
       const currentDEK = await dekService.generateDEK({ version: 1 });
       const currentMasterKey = await dekService.generateMasterKey();
-      const currentWrapped = await dekService.wrapDEK(currentDEK.dek, currentMasterKey, { version: 1 });
+      const currentWrapped = await dekService.wrapDEK(
+        currentDEK.dek,
+        currentMasterKey,
+        { version: 1 },
+      );
 
       const currentMasterKeyMapping = new Map();
       currentMasterKeyMapping.set(1, currentMasterKey);
 
-      const plan = service.generateRotationPlan([currentWrapped], currentMasterKeyMapping);
+      const plan = service.generateRotationPlan(
+        [currentWrapped],
+        currentMasterKeyMapping,
+      );
 
       expect(plan.totalDEKs).toBe(1);
       expect(plan.tasksRequired).toBe(0);
@@ -231,13 +256,17 @@ describe('KeyRotationService', () => {
 
       expect(validation.valid).toBe(true);
       expect(validation.errors).toHaveLength(0);
-      expect(validation.warnings).toContain('1 critical priority tasks require immediate attention');
+      expect(validation.warnings).toContain(
+        '1 critical priority tasks require immediate attention',
+      );
     });
 
     it('should identify critical tasks in warnings', () => {
       const validation = service.validateRotationPlan(mockPlan);
 
-      expect(validation.warnings).toContain('1 critical priority tasks require immediate attention');
+      expect(validation.warnings).toContain(
+        '1 critical priority tasks require immediate attention',
+      );
     });
 
     it('should return required versions', () => {

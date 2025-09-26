@@ -1,10 +1,18 @@
-import { Injectable, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RATE_LIMIT_KEY } from '../decorators/rate-limit.decorator';
 
 @Injectable()
 export class CustomRateLimitGuard {
-  private readonly requestCounts = new Map<string, { count: number; resetTime: number }>();
+  private readonly requestCounts = new Map<
+    string,
+    { count: number; resetTime: number }
+  >();
 
   constructor(private reflector: Reflector) {}
 
@@ -23,11 +31,17 @@ export class CustomRateLimitGuard {
     const key = `${clientIp}:${request.route?.path || request.url}`;
 
     const now = Date.now();
-    const { count, resetTime } = this.requestCounts.get(key) || { count: 0, resetTime: now + rateLimitConfig.ttl };
+    const { count, resetTime } = this.requestCounts.get(key) || {
+      count: 0,
+      resetTime: now + rateLimitConfig.ttl,
+    };
 
     // Reset counter if time window has passed
     if (now > resetTime) {
-      this.requestCounts.set(key, { count: 1, resetTime: now + rateLimitConfig.ttl });
+      this.requestCounts.set(key, {
+        count: 1,
+        resetTime: now + rateLimitConfig.ttl,
+      });
       return true;
     }
 

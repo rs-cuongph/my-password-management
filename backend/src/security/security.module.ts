@@ -6,11 +6,25 @@ import { SecurityController } from './security.controller';
 import { DEKService } from './services/dek.service';
 import { DEKController } from './controllers/dek.controller';
 import { KeyRotationService } from './services/key-rotation.service';
+import { VaultPayloadService } from './services/vault-payload.service';
+import { VaultPayloadController } from './controllers/vault-payload.controller';
 
 @Module({
   imports: [ConfigModule],
-  controllers: [SecurityController, DEKController],
-  providers: [SecurityService, SecurityMiddleware, DEKService, KeyRotationService],
-  exports: [SecurityService, SecurityMiddleware, DEKService, KeyRotationService],
+  controllers: [SecurityController, DEKController, VaultPayloadController],
+  providers: [
+    SecurityService,
+    SecurityMiddleware,
+    DEKService,
+    KeyRotationService,
+    VaultPayloadService,
+  ],
+  exports: [
+    SecurityService,
+    SecurityMiddleware,
+    DEKService,
+    KeyRotationService,
+    VaultPayloadService,
+  ],
 })
 export class SecurityModule {}

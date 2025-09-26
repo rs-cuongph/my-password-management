@@ -2,7 +2,9 @@ import { registerAs } from '@nestjs/config';
 
 export default registerAs('security', () => ({
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
+    secret:
+      process.env.JWT_SECRET ||
+      'your-super-secret-jwt-key-change-this-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   },
   cors: {
@@ -16,7 +18,10 @@ export default registerAs('security', () => ({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
     sensitiveMax: parseInt(process.env.RATE_LIMIT_SENSITIVE_MAX || '5', 10),
-    sensitiveWindow: parseInt(process.env.RATE_LIMIT_SENSITIVE_WINDOW || '900000', 10),
+    sensitiveWindow: parseInt(
+      process.env.RATE_LIMIT_SENSITIVE_WINDOW || '900000',
+      10,
+    ),
   },
   totp: {
     issuer: process.env.TOTP_ISSUER || 'VibeKanban',

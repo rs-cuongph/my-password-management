@@ -1,4 +1,9 @@
-import { PipeTransform, Injectable, ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import {
+  PipeTransform,
+  Injectable,
+  ArgumentMetadata,
+  BadRequestException,
+} from '@nestjs/common';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 
@@ -24,11 +29,13 @@ export class SecurityValidationPipe implements PipeTransform<any> {
     });
 
     if (errors.length > 0) {
-      const errorMessages = errors.map(error => {
+      const errorMessages = errors.map((error) => {
         const constraints = error.constraints;
-        return constraints ? Object.values(constraints).join(', ') : 'Validation failed';
+        return constraints
+          ? Object.values(constraints).join(', ')
+          : 'Validation failed';
       });
-      
+
       throw new BadRequestException({
         statusCode: 400,
         error: 'Validation Error',
@@ -50,7 +57,7 @@ export class SecurityValidationPipe implements PipeTransform<any> {
     }
 
     if (Array.isArray(value)) {
-      return value.map(item => this.sanitizeInput(item));
+      return value.map((item) => this.sanitizeInput(item));
     }
 
     if (value && typeof value === 'object') {
@@ -69,29 +76,31 @@ export class SecurityValidationPipe implements PipeTransform<any> {
   private sanitizeString(str: string): string {
     if (typeof str !== 'string') return str;
 
-    return str
-      // Remove potential XSS
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-      
-      // Remove javascript: protocol
-      .replace(/javascript:/gi, '')
-      .replace(/vbscript:/gi, '')
-      .replace(/data:/gi, '')
-      
-      // Remove event handlers
-      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-      .replace(/on\w+\s*=\s*[^"'\s>]+/gi, '')
-      
-      // Remove HTML tags
-      .replace(/<[^>]*>/g, '')
-      
-      // Remove SQL injection patterns
-      .replace(/('|(\\')|(;)|(\-\-)|(\/\*)|(\*\/))/gi, '')
-      
-      // Trim whitespace
-      .trim();
+    return (
+      str
+        // Remove potential XSS
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+        .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+        .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+
+        // Remove javascript: protocol
+        .replace(/javascript:/gi, '')
+        .replace(/vbscript:/gi, '')
+        .replace(/data:/gi, '')
+
+        // Remove event handlers
+        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/on\w+\s*=\s*[^"'\s>]+/gi, '')
+
+        // Remove HTML tags
+        .replace(/<[^>]*>/g, '')
+
+        // Remove SQL injection patterns
+        .replace(/('|(\\')|(;)|(\-\-)|(\/\*)|(\*\/))/gi, '')
+
+        // Trim whitespace
+        .trim()
+    );
   }
 }

@@ -35,7 +35,7 @@ export class EncryptionUtil {
       const combined = Buffer.concat([
         iv,
         tag,
-        Buffer.from(encrypted, 'base64')
+        Buffer.from(encrypted, 'base64'),
       ]);
 
       return combined.toString('base64');
@@ -57,7 +57,10 @@ export class EncryptionUtil {
 
       // Extract IV, tag, and encrypted data
       const iv = combined.subarray(0, this.IV_LENGTH);
-      const tag = combined.subarray(this.IV_LENGTH, this.IV_LENGTH + this.TAG_LENGTH);
+      const tag = combined.subarray(
+        this.IV_LENGTH,
+        this.IV_LENGTH + this.TAG_LENGTH,
+      );
       const encrypted = combined.subarray(this.IV_LENGTH + this.TAG_LENGTH);
 
       const decipher = crypto.createDecipheriv(this.ALGORITHM, keyBuffer, iv);

@@ -24,10 +24,12 @@ export class SecurityMiddleware implements NestMiddleware {
   private logSecurityEvent(req: Request) {
     const { method, url, ip, headers } = req;
     const userAgent = headers['user-agent'] || 'Unknown';
-    
+
     // Log suspicious patterns
     if (this.isSuspiciousRequest(req)) {
-      this.logger.warn(`Suspicious request detected: ${method} ${url} from ${ip} - User-Agent: ${userAgent}`);
+      this.logger.warn(
+        `Suspicious request detected: ${method} ${url} from ${ip} - User-Agent: ${userAgent}`,
+      );
     }
 
     // Log authentication attempts
@@ -49,38 +51,41 @@ export class SecurityMiddleware implements NestMiddleware {
       /on\w+\s*=/i, // Event handler injection
     ];
 
-    return suspiciousPatterns.some(pattern => 
-      pattern.test(url) || pattern.test(userAgent)
+    return suspiciousPatterns.some(
+      (pattern) => pattern.test(url) || pattern.test(userAgent),
     );
   }
 
   private addSecurityHeaders(res: Response) {
     // Prevent clickjacking
     res.setHeader('X-Frame-Options', 'DENY');
-    
+
     // Prevent MIME type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    
+
     // Enable XSS protection
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    
+
     // Referrer policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     // Permissions policy
-    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    res.setHeader(
+      'Permissions-Policy',
+      'geolocation=(), microphone=(), camera=()',
+    );
   }
 
   private sanitizeRequest(req: Request) {
     // Remove potentially dangerous headers
     delete req.headers['x-forwarded-host'];
     delete req.headers['x-forwarded-proto'];
-    
+
     // Sanitize query parameters
     if (req.query) {
-      Object.keys(req.query).forEach(key => {
+      Object.keys(req.query).forEach((key) => {
         if (typeof req.query[key] === 'string') {
-          req.query[key] = this.sanitizeString(req.query[key] as string);
+          req.query[key] = this.sanitizeString(req.query[key]);
         }
       });
     }
@@ -94,7 +99,7 @@ export class SecurityMiddleware implements NestMiddleware {
   private sanitizeObject(obj: any) {
     if (typeof obj !== 'object' || obj === null) return;
 
-    Object.keys(obj).forEach(key => {
+    Object.keys(obj).forEach((key) => {
       if (typeof obj[key] === 'string') {
         obj[key] = this.sanitizeString(obj[key]);
       } else if (typeof obj[key] === 'object') {

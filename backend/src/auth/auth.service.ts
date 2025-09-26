@@ -108,10 +108,7 @@ export class AuthService {
       }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.password as string,
-      );
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         return {
           success: false,
@@ -186,12 +183,17 @@ export class AuthService {
       });
 
       // Encrypt the secret
-      const encryptionKey = this.configService.get<string>('TOTP_ENCRYPTION_KEY');
+      const encryptionKey = this.configService.get<string>(
+        'TOTP_ENCRYPTION_KEY',
+      );
       if (!encryptionKey) {
         throw new BadRequestException('TOTP encryption key not configured');
       }
 
-      const encryptedSecret = EncryptionUtil.encrypt(secret.base32, encryptionKey);
+      const encryptedSecret = EncryptionUtil.encrypt(
+        secret.base32,
+        encryptionKey,
+      );
 
       // Store encrypted secret in database
       await this.prisma.user.update({
@@ -209,11 +211,16 @@ export class AuthService {
         message: 'TOTP secret generated successfully',
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       console.error('Setup 2FA error:', error);
-      throw new BadRequestException('Đã xảy ra lỗi trong quá trình thiết lập 2FA');
+      throw new BadRequestException(
+        'Đã xảy ra lỗi trong quá trình thiết lập 2FA',
+      );
     }
   }
 
@@ -242,12 +249,17 @@ export class AuthService {
       }
 
       // Decrypt TOTP secret
-      const encryptionKey = this.configService.get<string>('TOTP_ENCRYPTION_KEY');
+      const encryptionKey = this.configService.get<string>(
+        'TOTP_ENCRYPTION_KEY',
+      );
       if (!encryptionKey) {
         throw new BadRequestException('TOTP encryption key not configured');
       }
 
-      const decryptedSecret = EncryptionUtil.decrypt(user.totpSecret, encryptionKey);
+      const decryptedSecret = EncryptionUtil.decrypt(
+        user.totpSecret,
+        encryptionKey,
+      );
 
       // Verify TOTP code
       const verified = speakeasy.totp.verify({
@@ -288,11 +300,16 @@ export class AuthService {
         message: '2FA đã được kích hoạt thành công',
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       console.error('Verify 2FA error:', error);
-      throw new BadRequestException('Đã xảy ra lỗi trong quá trình xác thực 2FA');
+      throw new BadRequestException(
+        'Đã xảy ra lỗi trong quá trình xác thực 2FA',
+      );
     }
   }
 }

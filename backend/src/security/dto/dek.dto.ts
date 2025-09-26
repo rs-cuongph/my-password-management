@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DEKMetadataDto {

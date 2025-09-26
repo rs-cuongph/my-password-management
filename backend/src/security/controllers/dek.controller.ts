@@ -59,11 +59,15 @@ export class DEKController {
   @Post('wrap')
   @HttpCode(HttpStatus.OK)
   @SensitiveRateLimit()
-  async wrapDEK(@Body() request: WrapDEKRequestDto): Promise<WrapDEKResponseDto> {
+  async wrapDEK(
+    @Body() request: WrapDEKRequestDto,
+  ): Promise<WrapDEKResponseDto> {
     // Convert base64 inputs to Uint8Array
     const dek = new Uint8Array(Buffer.from(request.dek, 'base64'));
     const masterKey = new Uint8Array(Buffer.from(request.masterKey, 'base64'));
-    const nonce = request.nonce ? new Uint8Array(Buffer.from(request.nonce, 'base64')) : undefined;
+    const nonce = request.nonce
+      ? new Uint8Array(Buffer.from(request.nonce, 'base64'))
+      : undefined;
 
     try {
       const wrappedDEK = await this.dekService.wrapDEK(dek, masterKey, {
@@ -110,7 +114,8 @@ export class DEKController {
       metadata: {
         version: request.wrappedDEK.metadata.version,
         createdAt: new Date(request.wrappedDEK.metadata.createdAt),
-        algorithm: request.wrappedDEK.metadata.algorithm as 'xchacha20-poly1305',
+        algorithm: request.wrappedDEK.metadata
+          .algorithm as 'xchacha20-poly1305',
         kdf: request.wrappedDEK.metadata.kdf,
       },
     };
@@ -146,7 +151,7 @@ export class DEKController {
     @Body() request: GetKeyRotationInfoRequestDto,
   ): Promise<GetKeyRotationInfoResponseDto> {
     // Convert DTOs to interfaces
-    const wrappedDEKs = request.wrappedDEKs.map(dek => ({
+    const wrappedDEKs = request.wrappedDEKs.map((dek) => ({
       encryptedDEK: dek.encryptedDEK,
       nonce: dek.nonce,
       tag: dek.tag,
@@ -176,8 +181,12 @@ export class DEKController {
     @Body() request: RotateDEKRequestDto,
   ): Promise<RotateDEKResponseDto> {
     // Convert base64 keys to Uint8Array
-    const oldMasterKey = new Uint8Array(Buffer.from(request.oldMasterKey, 'base64'));
-    const newMasterKey = new Uint8Array(Buffer.from(request.newMasterKey, 'base64'));
+    const oldMasterKey = new Uint8Array(
+      Buffer.from(request.oldMasterKey, 'base64'),
+    );
+    const newMasterKey = new Uint8Array(
+      Buffer.from(request.newMasterKey, 'base64'),
+    );
 
     // Convert DTO to interface
     const wrappedDEK = {
@@ -187,7 +196,8 @@ export class DEKController {
       metadata: {
         version: request.wrappedDEK.metadata.version,
         createdAt: new Date(request.wrappedDEK.metadata.createdAt),
-        algorithm: request.wrappedDEK.metadata.algorithm as 'xchacha20-poly1305',
+        algorithm: request.wrappedDEK.metadata
+          .algorithm as 'xchacha20-poly1305',
         kdf: request.wrappedDEK.metadata.kdf,
       },
     };
@@ -226,7 +236,7 @@ export class DEKController {
   @SensitiveRateLimit()
   async generateMasterKey(): Promise<{ masterKey: string }> {
     const masterKey = await this.dekService.generateMasterKey();
-    
+
     try {
       return {
         masterKey: Buffer.from(masterKey).toString('base64'),
@@ -244,13 +254,16 @@ export class DEKController {
     @Body() request: { password: string; salt?: string },
   ): Promise<{ masterKey: string; salt: string }> {
     // Generate salt if not provided
-    const saltBytes = request.salt 
+    const saltBytes = request.salt
       ? new Uint8Array(Buffer.from(request.salt, 'base64'))
       : await this.dekService.generateSalt();
 
     try {
-      const masterKey = await this.dekService.deriveMasterKey(request.password, saltBytes);
-      
+      const masterKey = await this.dekService.deriveMasterKey(
+        request.password,
+        saltBytes,
+      );
+
       const response = {
         masterKey: Buffer.from(masterKey).toString('base64'),
         salt: Buffer.from(saltBytes).toString('base64'),

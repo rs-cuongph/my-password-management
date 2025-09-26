@@ -5,7 +5,6 @@ import { SensitiveRateLimit } from '../common/decorators/rate-limit.decorator';
 
 @Controller('security')
 export class SecurityController {
-  
   @Get('test')
   @Public()
   testSecurity() {

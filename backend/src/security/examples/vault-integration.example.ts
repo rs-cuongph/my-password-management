@@ -1,6 +1,6 @@
 /**
  * Example: Integrating DEK service with a vault system
- * 
+ *
  * This example demonstrates how to use the DEK service to implement
  * a secure vault that encrypts user data with wrapped DEKs.
  */
@@ -48,7 +48,7 @@ export class VaultService {
     try {
       // Generate salt for password-based key derivation
       salt = await this.dekService.generateSalt();
-      
+
       // Derive master key from password
       masterKey = await this.dekService.deriveMasterKey(password, salt);
 
@@ -129,12 +129,14 @@ export class VaultService {
       const result: VaultUnlockResult = {
         data: JSON.parse(decryptedData),
         needsRotation: analysis.rotationInfo.rotationNeeded,
-        rotationRecommendations: analysis.recommendations.map(r => r.reason),
+        rotationRecommendations: analysis.recommendations.map((r) => r.reason),
       };
 
       return result;
     } catch (error) {
-      throw new BadRequestException('Failed to unlock vault: Invalid password or corrupted data');
+      throw new BadRequestException(
+        'Failed to unlock vault: Invalid password or corrupted data',
+      );
     } finally {
       // Always clean up sensitive data
       if (salt) this.dekService.clearMemory(salt);
@@ -204,11 +206,17 @@ export class VaultService {
     try {
       // Derive old master key
       oldSalt = new Uint8Array(Buffer.from(vaultData.salt, 'base64'));
-      oldMasterKey = await this.dekService.deriveMasterKey(oldPassword, oldSalt);
+      oldMasterKey = await this.dekService.deriveMasterKey(
+        oldPassword,
+        oldSalt,
+      );
 
       // Generate new salt and derive new master key
       newSalt = await this.dekService.generateSalt();
-      newMasterKey = await this.dekService.deriveMasterKey(newPassword, newSalt);
+      newMasterKey = await this.dekService.deriveMasterKey(
+        newPassword,
+        newSalt,
+      );
 
       // Re-wrap the DEK with the new master key
       const rotatedWrappedDEK = await this.dekService.rotateDEK(
@@ -281,7 +289,10 @@ export class VaultService {
   async bulkRotateVaults(
     password: string,
     vaults: VaultData[],
-  ): Promise<{ successful: VaultData[]; failed: { vault: VaultData; error: string }[] }> {
+  ): Promise<{
+    successful: VaultData[];
+    failed: { vault: VaultData; error: string }[];
+  }> {
     const successful: VaultData[] = [];
     const failed: { vault: VaultData; error: string }[] = [];
 
@@ -307,19 +318,19 @@ export class VaultService {
     try {
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipheriv('aes-256-gcm', dek, iv);
-      
+
       let encrypted = cipher.update(data, 'utf8', 'base64');
       encrypted += cipher.final('base64');
-      
+
       const tag = cipher.getAuthTag();
-      
+
       // Combine IV + tag + encrypted data
       const combined = Buffer.concat([
         iv,
         tag,
         Buffer.from(encrypted, 'base64'),
       ]);
-      
+
       return combined.toString('base64');
     } catch (error) {
       throw new Error(`Data encryption failed: ${error.message}`);
@@ -332,18 +343,18 @@ export class VaultService {
   private decryptData(encryptedData: string, dek: Uint8Array): string {
     try {
       const combined = Buffer.from(encryptedData, 'base64');
-      
+
       // Extract IV, tag, and encrypted data
       const iv = combined.subarray(0, 16);
       const tag = combined.subarray(16, 32);
       const encrypted = combined.subarray(32);
-      
+
       const decipher = crypto.createDecipheriv('aes-256-gcm', dek, iv);
       decipher.setAuthTag(tag);
-      
+
       let decrypted = decipher.update(encrypted, undefined, 'utf8');
       decrypted += decipher.final('utf8');
-      
+
       return decrypted;
     } catch (error) {
       throw new Error(`Data decryption failed: ${error.message}`);
@@ -358,42 +369,42 @@ export class VaultService {
 // @Controller('vault')
 // export class VaultController {
 //   constructor(private vaultService: VaultService) {}
-// 
+//
 //   @Post('create')
 //   async createVault(@Body() request: { password: string; data: any }) {
 //     const vault = await this.vaultService.createVault(
 //       request.password,
 //       request.data,
 //     );
-//     
+//
 //     return {
 //       vaultId: vault.id,
 //       createdAt: vault.createdAt,
 //       // Don't return sensitive data
 //     };
 //   }
-// 
+//
 //   @Post('unlock')
 //   async unlockVault(@Body() request: { password: string; vaultData: VaultData }) {
 //     const result = await this.vaultService.unlockVault(
 //       request.password,
 //       request.vaultData,
 //     );
-//     
+//
 //     return {
 //       data: result.data,
 //       needsRotation: result.needsRotation,
 //       recommendations: result.rotationRecommendations,
 //     };
 //   }
-// 
+//
 //   @Post('rotate')
 //   async rotateKeys(@Body() request: { password: string; vaultData: VaultData }) {
 //     const rotatedVault = await this.vaultService.rotateVaultKeys(
 //       request.password,
 //       request.vaultData,
 //     );
-//     
+//
 //     return {
 //       message: 'Keys rotated successfully',
 //       rotatedAt: rotatedVault.lastAccessedAt,

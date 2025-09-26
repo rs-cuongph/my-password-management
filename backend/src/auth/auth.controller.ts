@@ -7,7 +7,10 @@ import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { Setup2faDto, Setup2faResponseDto } from './dto/setup-2fa.dto';
 import { Verify2faDto, Verify2faResponseDto } from './dto/verify-2fa.dto';
 import { Public } from './decorators/public.decorator';
-import { SensitiveRateLimit, StrictRateLimit } from '../common/decorators/rate-limit.decorator';
+import {
+  SensitiveRateLimit,
+  StrictRateLimit,
+} from '../common/decorators/rate-limit.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -34,14 +37,18 @@ export class AuthController {
   @Post('setup-2fa')
   @HttpCode(HttpStatus.OK)
   @StrictRateLimit() // 3 attempts per 15 minutes
-  async setup2fa(@Body() setup2faDto: Setup2faDto): Promise<Setup2faResponseDto> {
+  async setup2fa(
+    @Body() setup2faDto: Setup2faDto,
+  ): Promise<Setup2faResponseDto> {
     return this.authService.setup2fa(setup2faDto);
   }
 
   @Post('verify-2fa')
   @HttpCode(HttpStatus.OK)
   @SensitiveRateLimit() // 5 attempts per 15 minutes
-  async verify2fa(@Body() verify2faDto: Verify2faDto): Promise<Verify2faResponseDto> {
+  async verify2fa(
+    @Body() verify2faDto: Verify2faDto,
+  ): Promise<Verify2faResponseDto> {
     return this.authService.verify2fa(verify2faDto);
   }
 }

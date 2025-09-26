@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import _sodium from 'libsodium-wrappers';
 import * as crypto from 'crypto';
@@ -55,7 +59,9 @@ export class DEKService implements IDEKService {
         metadata,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to generate DEK: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to generate DEK: ${error.message}`,
+      );
     }
   }
 
@@ -74,8 +80,9 @@ export class DEKService implements IDEKService {
       this.validateKeySize(masterKey, this.DEK_SIZE, 'Master key');
 
       // Generate or use provided nonce
-      const nonce = options.nonce || this.sodium.randombytes_buf(this.NONCE_SIZE);
-      
+      const nonce =
+        options.nonce || this.sodium.randombytes_buf(this.NONCE_SIZE);
+
       if (nonce.length !== this.NONCE_SIZE) {
         throw new BadRequestException(`Nonce must be ${this.NONCE_SIZE} bytes`);
       }
@@ -109,7 +116,9 @@ export class DEKService implements IDEKService {
         metadata,
       };
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to wrap DEK: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to wrap DEK: ${error.message}`,
+      );
     }
   }
 
@@ -133,17 +142,23 @@ export class DEKService implements IDEKService {
 
       // Validate sizes
       if (nonce.length !== this.NONCE_SIZE) {
-        throw new BadRequestException(`Invalid nonce size: expected ${this.NONCE_SIZE}, got ${nonce.length}`);
+        throw new BadRequestException(
+          `Invalid nonce size: expected ${this.NONCE_SIZE}, got ${nonce.length}`,
+        );
       }
       if (tag.length !== this.TAG_SIZE) {
-        throw new BadRequestException(`Invalid tag size: expected ${this.TAG_SIZE}, got ${tag.length}`);
+        throw new BadRequestException(
+          `Invalid tag size: expected ${this.TAG_SIZE}, got ${tag.length}`,
+        );
       }
 
       // Prepare additional authenticated data
       const aad = options.aad ? Buffer.from(options.aad, 'utf8') : null;
 
       // Combine ciphertext and tag for decryption
-      const ciphertextWithTag = new Uint8Array(encryptedDEK.length + tag.length);
+      const ciphertextWithTag = new Uint8Array(
+        encryptedDEK.length + tag.length,
+      );
       ciphertextWithTag.set(encryptedDEK);
       ciphertextWithTag.set(tag, encryptedDEK.length);
 
@@ -157,7 +172,9 @@ export class DEKService implements IDEKService {
       );
 
       if (!decrypted) {
-        throw new BadRequestException('Failed to decrypt DEK: invalid key or corrupted data');
+        throw new BadRequestException(
+          'Failed to decrypt DEK: invalid key or corrupted data',
+        );
       }
 
       return {
@@ -171,7 +188,9 @@ export class DEKService implements IDEKService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException(`Failed to unwrap DEK: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to unwrap DEK: ${error.message}`,
+      );
     }
   }
 
@@ -187,7 +206,7 @@ export class DEKService implements IDEKService {
       };
     }
 
-    const versions = wrappedDEKs.map(dek => dek.metadata.version);
+    const versions = wrappedDEKs.map((dek) => dek.metadata.version);
     const uniqueVersions = [...new Set(versions)].sort((a, b) => b - a);
     const maxVersion = Math.max(...versions);
 
@@ -221,7 +240,9 @@ export class DEKService implements IDEKService {
 
       return rotatedDEK;
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to rotate DEK: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to rotate DEK: ${error.message}`,
+      );
     }
   }
 
@@ -231,12 +252,12 @@ export class DEKService implements IDEKService {
   clearMemory(data: Uint8Array | Uint8Array[]): void {
     try {
       const arrays = Array.isArray(data) ? data : [data];
-      
+
       for (const array of arrays) {
         if (array && array.length > 0) {
           // Zero out the memory
           array.fill(0);
-          
+
           // Additional security measure: fill with random data then zero again
           if (this.sodium) {
             const randomData = this.sodium.randombytes_buf(array.length);
@@ -262,7 +283,10 @@ export class DEKService implements IDEKService {
   /**
    * Derive a master key from a password using Argon2id
    */
-  async deriveMasterKey(password: string, salt: Uint8Array): Promise<Uint8Array> {
+  async deriveMasterKey(
+    password: string,
+    salt: Uint8Array,
+  ): Promise<Uint8Array> {
     await this.ensureSodiumReady();
 
     try {
@@ -278,7 +302,9 @@ export class DEKService implements IDEKService {
 
       return key;
     } catch (error) {
-      throw new InternalServerErrorException(`Failed to derive master key: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to derive master key: ${error.message}`,
+      );
     }
   }
 
@@ -296,7 +322,11 @@ export class DEKService implements IDEKService {
     }
   }
 
-  private validateKeySize(key: Uint8Array, expectedSize: number, keyName: string): void {
+  private validateKeySize(
+    key: Uint8Array,
+    expectedSize: number,
+    keyName: string,
+  ): void {
     if (!key || key.length !== expectedSize) {
       throw new BadRequestException(
         `${keyName} must be ${expectedSize} bytes, got ${key?.length || 0}`,

@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEKService } from './dek.service';
 import { WrappedDEK, KeyRotationInfo } from '../interfaces/dek.interface';
@@ -93,13 +97,13 @@ export class KeyRotationService {
     const effectivePolicy = { ...this.defaultRotationPolicy, ...policy };
     const now = new Date();
     const latestVersion = this.getLatestVersion();
-    
+
     const recommendations: RotationRecommendation[] = [];
-    
+
     for (const wrappedDEK of wrappedDEKs) {
       const age = now.getTime() - wrappedDEK.metadata.createdAt.getTime();
       const version = wrappedDEK.metadata.version;
-      
+
       // Check age-based rotation
       if (age > effectivePolicy.maxAge) {
         recommendations.push({
@@ -110,7 +114,7 @@ export class KeyRotationService {
           recommendedVersion: latestVersion,
         });
       }
-      
+
       // Check version-based rotation
       if (version < latestVersion) {
         recommendations.push({
@@ -121,7 +125,7 @@ export class KeyRotationService {
           recommendedVersion: latestVersion,
         });
       }
-      
+
       // Check deprecated versions
       if (this.isVersionDeprecated(version)) {
         recommendations.push({
@@ -190,17 +194,21 @@ export class KeyRotationService {
     const newMasterKey = masterKeyMapping.get(latestVersion);
 
     if (!newMasterKey) {
-      throw new BadRequestException(`Master key for version ${latestVersion} not provided`);
+      throw new BadRequestException(
+        `Master key for version ${latestVersion} not provided`,
+      );
     }
 
     const tasks: RotationTask[] = [];
-    
+
     for (const recommendation of analysis.recommendations) {
       const oldVersion = recommendation.wrappedDEK.metadata.version;
       const oldMasterKey = masterKeyMapping.get(oldVersion);
 
       if (!oldMasterKey) {
-        throw new BadRequestException(`Master key for version ${oldVersion} not provided`);
+        throw new BadRequestException(
+          `Master key for version ${oldVersion} not provided`,
+        );
       }
 
       tasks.push({
@@ -216,7 +224,9 @@ export class KeyRotationService {
     return {
       totalDEKs: wrappedDEKs.length,
       tasksRequired: tasks.length,
-      highPriorityTasks: tasks.filter(t => t.priority === 'high' || t.priority === 'critical').length,
+      highPriorityTasks: tasks.filter(
+        (t) => t.priority === 'high' || t.priority === 'critical',
+      ).length,
       tasks,
       estimatedDuration: tasks.length * 100, // rough estimate in ms
     };
@@ -244,9 +254,11 @@ export class KeyRotationService {
     }
 
     // Check for high-priority tasks
-    const criticalTasks = plan.tasks.filter(t => t.priority === 'critical');
+    const criticalTasks = plan.tasks.filter((t) => t.priority === 'critical');
     if (criticalTasks.length > 0) {
-      warnings.push(`${criticalTasks.length} critical priority tasks require immediate attention`);
+      warnings.push(
+        `${criticalTasks.length} critical priority tasks require immediate attention`,
+      );
     }
 
     return {
