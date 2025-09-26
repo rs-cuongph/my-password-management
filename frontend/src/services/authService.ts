@@ -53,8 +53,8 @@ const authApi = {
   updateProfile: (data: UserProfileInput): Promise<ApiResponse<User>> =>
     apiService.put('/auth/profile', data),
 
-  refreshToken: (refreshToken: string): Promise<ApiResponse<{ access_token: string }>> =>
-    apiService.post('/auth/refresh', { refresh_token: refreshToken }),
+  refreshToken: (): Promise<ApiResponse<LoginResponse>> =>
+    apiService.post('/auth/refresh'),
 
   setupTOTP: (data: TOTPSetupInput): Promise<ApiResponse<TOTPSetupResponse>> =>
     apiService.post('/auth/setup-2fa', data),
