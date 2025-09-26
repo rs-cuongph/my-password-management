@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
 import VaultDashboard from '../components/VaultDashboard';
 import EntryForm from '../components/EntryForm';
-import { PasswordEntry, VaultCryptoService, PasswordVaultPayload } from '../utils/vaultCrypto';
+import { ThemeToggle } from '../components/ThemeToggle';
+import type { PasswordEntry } from '../utils/vaultCrypto';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
 import { useAuthStore } from '../stores/authStore';
 
@@ -38,11 +40,11 @@ export const VaultPage: React.FC = () => {
           id: '1',
           site: 'Google',
           username: 'user@example.com',
-          password: 'password123',
+          password: 'MySecure@Pass123',
           hint: 'Mật khẩu email chính',
           url: 'https://accounts.google.com',
-          notes: 'Tài khoản Google chính cho công việc',
-          tags: ['work', 'email'],
+          notes: 'Tài khoản Google chính cho công việc và các dịch vụ Google khác',
+          tags: ['work', 'email', 'important'],
           createdAt: new Date('2024-01-15'),
           updatedAt: new Date('2024-02-01'),
           lastUsed: new Date('2024-02-20'),
@@ -51,10 +53,10 @@ export const VaultPage: React.FC = () => {
           id: '2',
           site: 'GitHub',
           username: 'developer123',
-          password: 'gh_securetoken456',
+          password: 'gh_token_secure456!',
           url: 'https://github.com',
-          notes: 'Tài khoản GitHub để phát triển',
-          tags: ['work', 'development'],
+          notes: 'Tài khoản GitHub để phát triển các dự án open source',
+          tags: ['work', 'development', 'coding'],
           createdAt: new Date('2024-01-20'),
           updatedAt: new Date('2024-01-20'),
         },
@@ -62,13 +64,36 @@ export const VaultPage: React.FC = () => {
           id: '3',
           site: 'Facebook',
           username: 'myemail@example.com',
-          password: 'fb_pass789',
+          password: 'FB_social789#',
           hint: 'Tên thú cưng + năm sinh',
           url: 'https://facebook.com',
           tags: ['personal', 'social'],
           createdAt: new Date('2024-01-10'),
           updatedAt: new Date('2024-01-25'),
           lastUsed: new Date('2024-02-18'),
+        },
+        {
+          id: '4',
+          site: 'Netflix',
+          username: 'movie.lover@email.com',
+          password: 'Netflix2024!',
+          url: 'https://netflix.com',
+          notes: 'Tài khoản Netflix gia đình',
+          tags: ['entertainment', 'streaming', 'family'],
+          createdAt: new Date('2024-02-01'),
+          updatedAt: new Date('2024-02-15'),
+          lastUsed: new Date('2024-02-22'),
+        },
+        {
+          id: '5',
+          site: 'Spotify',
+          username: 'music.fan',
+          password: 'Spotify#Music2024',
+          url: 'https://spotify.com',
+          notes: 'Premium account cho nghe nhạc',
+          tags: ['entertainment', 'music', 'premium'],
+          createdAt: new Date('2024-01-05'),
+          updatedAt: new Date('2024-02-10'),
         },
       ];
 
@@ -174,10 +199,15 @@ export const VaultPage: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải vault...</p>
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center animate-pulse-soft">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <p className="text-neutral-600 dark:text-neutral-400 text-lg">Đang tải vault...</p>
+          <p className="text-neutral-500 dark:text-neutral-500 text-sm mt-2">Giải mã dữ liệu bảo mật</p>
         </div>
       </div>
     );
@@ -186,50 +216,88 @@ export const VaultPage: React.FC = () => {
   // Error state
   if (error && !masterPassword) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center max-w-md mx-4">
+          <div className="card p-8 shadow-xl animate-scale-in">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-error-100 to-warning-100 dark:from-error-900 dark:to-warning-900 rounded-2xl flex items-center justify-center">
+              <svg className="w-10 h-10 text-error-600 dark:text-error-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">Cần xác thực</h2>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-6">{error}</p>
+            <Link
+              to="/master-password"
+              className="btn-primary text-base py-3 flex items-center gap-3 w-full justify-center"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              Nhập Master Password
+            </Link>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Cần xác thực</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.href = '/master-password'}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
-          >
-            Nhập Master Password
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
+      {/* Navigation */}
+      <nav className="backdrop-blur-md bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center gap-6">
+              <Link to="/" className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                Vibe Kanban
+              </Link>
+              <span className="text-neutral-400">•</span>
+              <span className="text-neutral-700 dark:text-neutral-300 font-medium">Password Vault</span>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/settings"
+                className="nav-link flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="hidden sm:inline">Cài đặt</span>
+              </Link>
+              
+              <ThemeToggle variant="dropdown" size="md" />
+              
+              <div className="flex items-center gap-3 pl-4 border-l border-neutral-200 dark:border-neutral-800">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="hidden md:block text-sm text-neutral-600 dark:text-neutral-400">
+                  {user?.name}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Error notification */}
       {error && masterPassword && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        <div className="card border-error-200 dark:border-error-800 bg-error-50 dark:bg-error-950 p-4 mx-4 mt-4">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-error-600 dark:text-error-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p className="text-sm text-error-700 dark:text-error-300 flex-1">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-error-400 hover:text-error-600 dark:hover:text-error-300 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-            <div className="ml-auto pl-3">
-              <button
-                onClick={() => setError(null)}
-                className="text-red-400 hover:text-red-600"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            </button>
           </div>
         </div>
       )}

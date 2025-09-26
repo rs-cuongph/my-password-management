@@ -88,14 +88,14 @@ const ToastItem: React.FC<{
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-success-50 dark:bg-success-950 border-success-200 dark:border-success-800 text-success-800 dark:text-success-200';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-error-50 dark:bg-error-950 border-error-200 dark:border-error-800 text-error-800 dark:text-error-200';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-warning-50 dark:bg-warning-950 border-warning-200 dark:border-warning-800 text-warning-800 dark:text-warning-200';
       case 'info':
       default:
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-200';
     }
   };
 
@@ -103,26 +103,26 @@ const ToastItem: React.FC<{
     switch (toast.type) {
       case 'success':
         return (
-          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         );
       case 'error':
         return (
-          <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-error-600 dark:text-error-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         );
       case 'warning':
         return (
-          <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         );
       case 'info':
       default:
         return (
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -130,7 +130,7 @@ const ToastItem: React.FC<{
   };
 
   return (
-    <div className={`border rounded-lg p-4 shadow-lg transition-all duration-300 ease-in-out ${getToastStyles()}`}>
+    <div className={`border rounded-2xl p-4 shadow-xl backdrop-blur-md transition-all duration-300 ease-in-out animate-slide-down ${getToastStyles()}`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {getIcon()}
@@ -145,7 +145,7 @@ const ToastItem: React.FC<{
         </div>
         <button
           onClick={() => onRemove(toast.id)}
-          className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex-shrink-0 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors rounded-lg p-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

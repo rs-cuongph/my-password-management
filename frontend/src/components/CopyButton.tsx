@@ -61,12 +61,12 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
   const getVariantClasses = () => {
     switch (variant) {
       case 'outline':
-        return 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700';
+        return 'border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300';
       case 'solid':
-        return 'bg-blue-600 hover:bg-blue-700 text-white';
+        return 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white';
       case 'ghost':
       default:
-        return 'text-gray-400 hover:text-gray-600 hover:bg-gray-100';
+        return 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800';
     }
   };
 
@@ -196,7 +196,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
       {countdown !== null && countdown > 0 && showCountdown && (
         <button
           onClick={handleCancelAutoClear}
-          className="text-xs text-gray-500 hover:text-gray-700 px-1 py-0.5 rounded transition-colors"
+          className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 px-1 py-0.5 rounded transition-colors"
           title="Hủy tự xóa"
         >
           {countdown}s
