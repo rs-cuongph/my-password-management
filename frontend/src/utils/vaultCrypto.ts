@@ -14,6 +14,29 @@ export interface VaultEntry {
   metadata?: Record<string, any>;
 }
 
+// Password Manager Entry Interface
+export interface PasswordEntry {
+  id: string;
+  site: string;           // Website/service name
+  username: string;       // Username/email
+  password: string;       // Encrypted password
+  hint?: string;          // Password hint
+  url?: string;           // Website URL
+  notes?: string;         // Additional notes
+  tags?: string[];        // Tags for organization
+  createdAt: Date;
+  updatedAt: Date;
+  lastUsed?: Date;        // Last time password was used
+  metadata?: Record<string, any>;
+}
+
+// Updated VaultPayload to include password entries
+export interface PasswordVaultPayload {
+  passwordEntries: PasswordEntry[];
+  boards: VaultBoard[];
+  metadata: VaultMetadata;
+}
+
 export interface VaultBoard {
   id: string;
   name: string;

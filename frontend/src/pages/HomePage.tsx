@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { useAuthStore } from '../stores/authStore';
 import { useMasterPasswordStore, getMasterPasswordStatus, startAutoLockTimer, stopAutoLockTimer, resetAutoLockTimer } from '../stores/masterPasswordStore';
+import { Link } from '@tanstack/react-router';
 
 const HomePage: React.FC = () => {
   const { theme, language, setTheme, setLanguage } = useAppStore();
@@ -51,16 +52,47 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Vibe Kanban
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Modern React Application với các tech stack hiện đại
-          </p>
+    <div className="min-h-screen">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link to="/" className="text-xl font-bold text-gray-900">
+                Vibe Kanban
+              </Link>
+            </div>
+
+            {isAuthenticated && (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/vault"
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Password Vault
+                </Link>
+                <div className="text-sm text-gray-500">
+                  {user?.name}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      </nav>
+
+      <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Vibe Kanban
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Modern React Application với các tech stack hiện đại
+            </p>
+          </div>
 
         <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <div className="space-y-6">
@@ -150,11 +182,23 @@ const HomePage: React.FC = () => {
               )}
             </div>
 
-            {/* Action Button */}
-            <div className="flex justify-center">
-              <button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
-                Bắt đầu sử dụng
-              </button>
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4">
+              {isAuthenticated && masterPasswordStatus.isUnlocked ? (
+                <Link
+                  to="/vault"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Mở Password Vault
+                </Link>
+              ) : (
+                <button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
+                  {isAuthenticated ? 'Cần mở khóa để truy cập Vault' : 'Bắt đầu sử dụng'}
+                </button>
+              )}
             </div>
           </div>
         </div>
