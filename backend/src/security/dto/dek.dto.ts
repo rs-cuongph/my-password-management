@@ -8,6 +8,18 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export class KDFParametersDto {
+  @IsString()
+  algorithm: string;
+
+  @IsString()
+  salt: string;
+
+  @IsOptional()
+  @IsNumber()
+  iterations?: number;
+}
+
 export class DEKMetadataDto {
   @IsNumber()
   version: number;
@@ -22,18 +34,6 @@ export class DEKMetadataDto {
   @ValidateNested()
   @Type(() => KDFParametersDto)
   kdf?: KDFParametersDto;
-}
-
-export class KDFParametersDto {
-  @IsString()
-  algorithm: string;
-
-  @IsString()
-  salt: string;
-
-  @IsOptional()
-  @IsNumber()
-  iterations?: number;
 }
 
 export class WrappedDEKDto {

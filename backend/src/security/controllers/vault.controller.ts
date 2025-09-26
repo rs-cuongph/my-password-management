@@ -17,7 +17,7 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import {
@@ -56,11 +56,7 @@ export class VaultController {
     status: 401,
     description: 'Unauthorized - invalid JWT token',
   })
-  @RateLimit({
-    name: 'vault-read',
-    ttl: 60000, // 1 minute
-    limit: 30, // 30 requests per minute for vault reads
-  })
+  @RateLimit(30, 60000) // 30 requests per minute
   async getVault(@Req() req: Request): Promise<GetVaultResponseDto> {
     const userId = req.user?.['sub'];
     if (!userId) {
@@ -119,11 +115,7 @@ export class VaultController {
     status: 413,
     description: 'Vault data too large',
   })
-  @RateLimit({
-    name: 'vault-write',
-    ttl: 60000, // 1 minute
-    limit: 10, // 10 requests per minute for vault writes (more restrictive)
-  })
+  @RateLimit(10, 60000) // 10 requests per minute
   async saveVault(
     @Req() req: Request,
     @Body() saveVaultDto: SaveVaultRequestDto,
@@ -212,11 +204,7 @@ export class VaultController {
     status: 401,
     description: 'Unauthorized - invalid JWT token',
   })
-  @RateLimit({
-    name: 'vault-version',
-    ttl: 30000, // 30 seconds
-    limit: 60, // 60 requests per 30 seconds for version checks
-  })
+  @RateLimit(60, 30000) // 60 requests per 30 seconds
   async checkVaultVersion(
     @Req() req: Request,
     @Query() query: CheckVaultVersionRequestDto,

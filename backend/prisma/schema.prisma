@@ -14,17 +14,66 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  email        String   @unique
-  password     String   // Hashed password for server authentication
-  kdfSalt      String   // Random salt for client-side key derivation
-  name         String?
-  need2fa      Boolean  @default(false)
-  totpSecret   String?  // Encrypted TOTP secret (AES-GCM encrypted)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  email      String   @unique
+  password   String // Hashed password for server authentication
+  kdfSalt    String // Random salt for client-side key derivation
+  name       String?
+  need2fa    Boolean  @default(false)
+  totpSecret String? // Encrypted TOTP secret (AES-GCM encrypted)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  vaults        Vault[]
+  recoveryCodes RecoveryCode[]
+  sessions      Session[]
 
   @@map("users")
+}
+
+model Vault {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  kdfJson        String // KDF parameters (Argon2 settings)
+  wrappedDek     String // Wrapped Data Encryption Key
+  blobCiphertext String // Encrypted vault data
+  version        Int      @default(1)
+  lastUpdated    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("vaults")
+}
+
+model RecoveryCode {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  codeHash  String // Hashed recovery code
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("recovery_codes")
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  tokenHash  String // Hashed session token
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }

@@ -1,0 +1,123 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: password-management-postgres
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=password_management_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - password-management-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d password_management_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: password-management-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - password-management-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Backend
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+      target: development
+    container_name: password-management-backend
+    restart: unless-stopped
+    env_file:
+      - ../backend/.env
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - password-management-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # React Frontend
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: ../docker/frontend.Dockerfile
+  #     target: development
+  #   container_name: password-management-frontend
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ../frontend/.env
+  #   environment:
+  #     - CHOKIDAR_USEPOLLING=true
+  #     - WATCHPACK_POLLING=true
+  #   ports:
+  #     - "${FRONTEND_PORT:-3000}:3000"
+  #   volumes:
+  #     - ../frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - password-management-network
+  #   stdin_open: true
+  #   tty: true
+
+  # Development Tools Container
+  devtools:
+    image: node:20-alpine
+    container_name: password-management-devtools
+    restart: "no"
+    volumes:
+      - ../:/workspace
+      - /workspace/node_modules
+    working_dir: /workspace
+    networks:
+      - password-management-network
+    profiles:
+      - tools
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  password-management-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

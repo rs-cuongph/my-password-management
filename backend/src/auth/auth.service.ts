@@ -18,6 +18,20 @@ import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 
+interface TempTokenPayload {
+  sub: number;
+  type: 'temp';
+  exp: number;
+  iat: number;
+}
+
+interface AuthTokenPayload {
+  sub: number;
+  type?: string;
+  exp: number;
+  iat: number;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -151,7 +165,7 @@ export class AuthService {
 
     try {
       // Verify temp token
-      const payload = this.jwtService.verify(tempToken);
+      const payload = this.jwtService.verify(tempToken) as TempTokenPayload;
       if (payload.type !== 'temp') {
         throw new UnauthorizedException('Invalid token type');
       }
@@ -202,12 +216,14 @@ export class AuthService {
       });
 
       // Generate QR code
-      const qrCodeDataURL = await QRCode.toDataURL(secret.otpauth_url);
+      const qrCodeDataURL = secret.otpauth_url
+        ? await QRCode.toDataURL(secret.otpauth_url)
+        : undefined;
 
       return {
         success: true,
-        otpauthUri: secret.otpauth_url,
-        qrCode: qrCodeDataURL,
+        otpauthUri: secret.otpauth_url!,
+        qrCode: qrCodeDataURL as string,
         message: 'TOTP secret generated successfully',
       };
     } catch (error) {
@@ -229,7 +245,7 @@ export class AuthService {
 
     try {
       // Verify temp token
-      const payload = this.jwtService.verify(tempToken);
+      const payload = this.jwtService.verify(tempToken) as TempTokenPayload;
       if (payload.type !== 'temp') {
         throw new UnauthorizedException('Invalid token type');
       }
