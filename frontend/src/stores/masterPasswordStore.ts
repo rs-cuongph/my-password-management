@@ -9,6 +9,8 @@ interface MasterPasswordState {
   lastActivity: number;
   autoLockTimeout: number; // in milliseconds
   isInitialized: boolean;
+  lockReason?: 'manual' | 'timeout' | 'focus_lost';
+  sensitiveData?: Record<string, unknown>; // For storing sensitive data that should be cleared on lock
 }
 
 interface MasterPasswordActions {
@@ -17,10 +19,13 @@ interface MasterPasswordActions {
   setIsUnlocked: (unlocked: boolean) => void;
   updateActivity: () => void;
   setAutoLockTimeout: (timeout: number) => void;
-  lock: () => void;
+  lock: (reason?: 'manual' | 'timeout' | 'focus_lost') => void;
   unlock: (key: string, params: KDFParams) => void;
   clear: () => void;
   initialize: () => void;
+  setSensitiveData: (key: string, data: unknown) => void;
+  clearSensitiveData: (key?: string) => void;
+  clearAllSensitiveData: () => void;
 }
 
 export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswordActions>()(
@@ -33,6 +38,8 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
       lastActivity: Date.now(),
       autoLockTimeout: 5 * 60 * 1000, // 5 minutes default
       isInitialized: false,
+      lockReason: undefined,
+      sensitiveData: {},
 
       // Actions
       setMasterKey: (key) =>
@@ -52,6 +59,7 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
           ...state,
           isUnlocked: unlocked,
           lastActivity: unlocked ? Date.now() : state.lastActivity,
+          lockReason: unlocked ? undefined : state.lockReason,
         })),
 
       updateActivity: () =>
@@ -66,13 +74,31 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
           autoLockTimeout: timeout,
         })),
 
-      lock: () =>
+      lock: (reason = 'manual') => {
+        // Clear sensitive data from memory
         set((state) => ({
           ...state,
           masterKey: null,
           isUnlocked: false,
           lastActivity: Date.now(),
-        })),
+          lockReason: reason,
+          sensitiveData: {}, // Clear all sensitive data
+        }));
+
+        // Additional memory cleanup
+        if (window.gc) {
+          try {
+            window.gc();
+          } catch (e) {
+            // Garbage collection not available
+          }
+        }
+
+        // Dispatch lock event
+        window.dispatchEvent(new CustomEvent('master-password-locked', { 
+          detail: { reason } 
+        }));
+      },
 
       unlock: (key, params) =>
         set((state) => ({
@@ -81,6 +107,7 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
           kdfParams: params,
           isUnlocked: true,
           lastActivity: Date.now(),
+          lockReason: undefined,
         })),
 
       clear: () =>
@@ -91,12 +118,39 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
           isUnlocked: false,
           lastActivity: Date.now(),
           isInitialized: false,
+          lockReason: undefined,
+          sensitiveData: {},
         })),
 
       initialize: () =>
         set((state) => ({
           ...state,
           isInitialized: true,
+        })),
+
+      setSensitiveData: (key, data) =>
+        set((state) => ({
+          ...state,
+          sensitiveData: {
+            ...state.sensitiveData,
+            [key]: data,
+          },
+        })),
+
+      clearSensitiveData: (key) =>
+        set((state) => {
+          if (!key) return state;
+          const { [key]: _removed, ...rest } = state.sensitiveData || {};
+          return {
+            ...state,
+            sensitiveData: rest,
+          };
+        }),
+
+      clearAllSensitiveData: () =>
+        set((state) => ({
+          ...state,
+          sensitiveData: {},
         })),
     }),
     {
@@ -105,7 +159,7 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
         kdfParams: state.kdfParams,
         autoLockTimeout: state.autoLockTimeout,
         isInitialized: state.isInitialized,
-        // Don't persist masterKey, isUnlocked, or lastActivity for security
+        // Don't persist masterKey, isUnlocked, lastActivity, lockReason, or sensitiveData for security
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -113,6 +167,8 @@ export const useMasterPasswordStore = create<MasterPasswordState & MasterPasswor
           state.masterKey = null;
           state.isUnlocked = false;
           state.lastActivity = Date.now();
+          state.lockReason = undefined;
+          state.sensitiveData = {};
         }
       },
     }
@@ -149,6 +205,7 @@ export const getMasterPasswordStatus = () => {
     isLocked,
     isInitialized: state.isInitialized,
     hasKDFParams: !!state.kdfParams,
+    lockReason: state.lockReason,
     timeUntilLock: Math.max(0, state.autoLockTimeout - (Date.now() - state.lastActivity)),
   };
 };
@@ -169,9 +226,7 @@ export const startAutoLockTimer = () => {
       const timeSinceActivity = now - lastActivity;
       
       if (timeSinceActivity > autoLockTimeout) {
-        lock();
-        // Dispatch custom event for components to listen
-        window.dispatchEvent(new CustomEvent('master-password-locked'));
+        lock('timeout');
       }
     }
   }, 1000); // Check every second
