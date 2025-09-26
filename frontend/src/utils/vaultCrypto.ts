@@ -61,7 +61,8 @@ export interface VaultMetadata {
 }
 
 export interface VaultPayload {
-  entries: VaultEntry[];
+  entries: VaultEntry[]; // Kanban entries
+  passwordEntries?: PasswordEntry[]; // Password manager entries
   boards: VaultBoard[];
   metadata: VaultMetadata;
 }
@@ -240,7 +241,8 @@ export class VaultCryptoService {
   static createEmptyVault(): VaultPayload {
     const now = new Date();
     return {
-      entries: [],
+      entries: [], // Kanban entries
+      passwordEntries: [], // Password manager entries
       boards: [
         {
           id: crypto.randomUUID(),
@@ -267,7 +269,69 @@ export class VaultCryptoService {
   }
 
   /**
-   * Add entry to vault
+   * Add password entry to vault
+   */
+  static addPasswordEntry(vault: VaultPayload, entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>): VaultPayload {
+    const now = new Date();
+    const newEntry: PasswordEntry = {
+      ...entry,
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return {
+      ...vault,
+      passwordEntries: [...(vault.passwordEntries || []), newEntry],
+      metadata: {
+        ...vault.metadata,
+        entryCount: vault.entries.length + (vault.passwordEntries?.length || 0) + 1,
+        lastSyncAt: now,
+      },
+    };
+  }
+
+  /**
+   * Update password entry in vault
+   */
+  static updatePasswordEntry(vault: VaultPayload, entryId: string, updates: Partial<PasswordEntry>): VaultPayload {
+    const now = new Date();
+    const passwordEntries = (vault.passwordEntries || []).map(entry =>
+      entry.id === entryId
+        ? { ...entry, ...updates, updatedAt: now }
+        : entry
+    );
+
+    return {
+      ...vault,
+      passwordEntries,
+      metadata: {
+        ...vault.metadata,
+        lastSyncAt: now,
+      },
+    };
+  }
+
+  /**
+   * Remove password entry from vault
+   */
+  static removePasswordEntry(vault: VaultPayload, entryId: string): VaultPayload {
+    const now = new Date();
+    const passwordEntries = (vault.passwordEntries || []).filter(entry => entry.id !== entryId);
+
+    return {
+      ...vault,
+      passwordEntries,
+      metadata: {
+        ...vault.metadata,
+        entryCount: vault.entries.length + passwordEntries.length,
+        lastSyncAt: now,
+      },
+    };
+  }
+
+  /**
+   * Add kanban entry to vault
    */
   static addEntry(vault: VaultPayload, entry: Omit<VaultEntry, 'id' | 'createdAt' | 'updatedAt'>): VaultPayload {
     const now = new Date();
@@ -414,18 +478,27 @@ export class VaultCryptoService {
       return false;
     }
 
-    // Validate entries
+    // Validate kanban entries
     for (const entry of payload.entries) {
       if (!entry.id || !entry.title || !entry.status || !entry.priority) {
         return false;
       }
-      
+
       if (!['todo', 'in-progress', 'done'].includes(entry.status)) {
         return false;
       }
-      
+
       if (!['low', 'medium', 'high'].includes(entry.priority)) {
         return false;
+      }
+    }
+
+    // Validate password entries (optional)
+    if (payload.passwordEntries && Array.isArray(payload.passwordEntries)) {
+      for (const entry of payload.passwordEntries) {
+        if (!entry.id || !entry.site || !entry.username || !entry.password) {
+          return false;
+        }
       }
     }
 
@@ -443,7 +516,8 @@ export class VaultCryptoService {
    * Get vault summary statistics
    */
   static getVaultSummary(vault: VaultPayload): {
-    totalEntries: number;
+    totalKanbanEntries: number;
+    totalPasswordEntries: number;
     totalBoards: number;
     entriesByStatus: Record<string, number>;
     entriesByPriority: Record<string, number>;
@@ -459,12 +533,28 @@ export class VaultCryptoService {
       return acc;
     }, {} as Record<string, number>);
 
-    const lastUpdated = vault.entries.reduce((latest, entry) => {
-      return entry.updatedAt > latest ? entry.updatedAt : latest;
-    }, vault.metadata.lastSyncAt);
+    // Calculate last updated across all entries
+    let lastUpdated = vault.metadata.lastSyncAt;
+
+    // Check kanban entries
+    for (const entry of vault.entries) {
+      if (entry.updatedAt > lastUpdated) {
+        lastUpdated = entry.updatedAt;
+      }
+    }
+
+    // Check password entries
+    if (vault.passwordEntries) {
+      for (const entry of vault.passwordEntries) {
+        if (entry.updatedAt > lastUpdated) {
+          lastUpdated = entry.updatedAt;
+        }
+      }
+    }
 
     return {
-      totalEntries: vault.entries.length,
+      totalKanbanEntries: vault.entries.length,
+      totalPasswordEntries: vault.passwordEntries?.length || 0,
       totalBoards: vault.boards.length,
       entriesByStatus,
       entriesByPriority,
@@ -482,6 +572,12 @@ export class VaultCryptoService {
         createdAt: entry.createdAt.toISOString(),
         updatedAt: entry.updatedAt.toISOString(),
       })),
+      passwordEntries: payload.passwordEntries?.map(entry => ({
+        ...entry,
+        createdAt: entry.createdAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+        lastUsed: entry.lastUsed?.toISOString(),
+      })) || [],
       boards: payload.boards.map(board => ({
         ...board,
         createdAt: board.createdAt.toISOString(),
@@ -503,6 +599,12 @@ export class VaultCryptoService {
         createdAt: new Date(entry.createdAt),
         updatedAt: new Date(entry.updatedAt),
       })),
+      passwordEntries: payload.passwordEntries?.map((entry: any) => ({
+        ...entry,
+        createdAt: new Date(entry.createdAt),
+        updatedAt: new Date(entry.updatedAt),
+        lastUsed: entry.lastUsed ? new Date(entry.lastUsed) : undefined,
+      })) || [],
       boards: payload.boards.map((board: any) => ({
         ...board,
         createdAt: new Date(board.createdAt),

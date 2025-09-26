@@ -3,108 +3,48 @@ import { Link } from '@tanstack/react-router';
 import VaultDashboard from '../components/VaultDashboard';
 import EntryForm from '../components/EntryForm';
 import { ThemeToggle } from '../components/ThemeToggle';
+import VaultSyncStatusIndicator from '../components/VaultSyncStatus';
+import VaultConflictResolver from '../components/VaultConflictResolver';
 import type { PasswordEntry } from '../utils/vaultCrypto';
+import { useVault } from '../hooks/useVault';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
 import { useAuthStore } from '../stores/authStore';
 
 export const VaultPage: React.FC = () => {
-  const [entries, setEntries] = useState<PasswordEntry[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
 
   const { masterPassword, kdfParams } = useMasterPasswordStore();
   const { user } = useAuthStore();
 
+  // Use vault hook for all vault operations
+  const {
+    vault,
+    entries,
+    isLoading,
+    isLoadingVault,
+    isSaving,
+    syncStatus,
+    hasUnsavedChanges,
+    error,
+    conflict,
+    loadVault,
+    saveVault,
+    addEntry,
+    updateEntry,
+    removeEntry,
+    resolveConflict,
+    clearError,
+  } = useVault();
+
   // Load vault data on mount
   useEffect(() => {
-    loadVaultData();
-  }, []);
-
-  const loadVaultData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Check if we have master password
-      if (!masterPassword || !kdfParams) {
-        setError('Cần nhập master password để truy cập vault');
-        return;
-      }
-
-      // Try to load existing vault or create empty one
-      // This is a placeholder - in real implementation, you would fetch from API
-      const mockEntries: PasswordEntry[] = [
-        {
-          id: '1',
-          site: 'Google',
-          username: 'user@example.com',
-          password: 'MySecure@Pass123',
-          hint: 'Mật khẩu email chính',
-          url: 'https://accounts.google.com',
-          notes: 'Tài khoản Google chính cho công việc và các dịch vụ Google khác',
-          tags: ['work', 'email', 'important'],
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-02-01'),
-          lastUsed: new Date('2024-02-20'),
-        },
-        {
-          id: '2',
-          site: 'GitHub',
-          username: 'developer123',
-          password: 'gh_token_secure456!',
-          url: 'https://github.com',
-          notes: 'Tài khoản GitHub để phát triển các dự án open source',
-          tags: ['work', 'development', 'coding'],
-          createdAt: new Date('2024-01-20'),
-          updatedAt: new Date('2024-01-20'),
-        },
-        {
-          id: '3',
-          site: 'Facebook',
-          username: 'myemail@example.com',
-          password: 'FB_social789#',
-          hint: 'Tên thú cưng + năm sinh',
-          url: 'https://facebook.com',
-          tags: ['personal', 'social'],
-          createdAt: new Date('2024-01-10'),
-          updatedAt: new Date('2024-01-25'),
-          lastUsed: new Date('2024-02-18'),
-        },
-        {
-          id: '4',
-          site: 'Netflix',
-          username: 'movie.lover@email.com',
-          password: 'Netflix2024!',
-          url: 'https://netflix.com',
-          notes: 'Tài khoản Netflix gia đình',
-          tags: ['entertainment', 'streaming', 'family'],
-          createdAt: new Date('2024-02-01'),
-          updatedAt: new Date('2024-02-15'),
-          lastUsed: new Date('2024-02-22'),
-        },
-        {
-          id: '5',
-          site: 'Spotify',
-          username: 'music.fan',
-          password: 'Spotify#Music2024',
-          url: 'https://spotify.com',
-          notes: 'Premium account cho nghe nhạc',
-          tags: ['entertainment', 'music', 'premium'],
-          createdAt: new Date('2024-01-05'),
-          updatedAt: new Date('2024-02-10'),
-        },
-      ];
-
-      setEntries(mockEntries);
-    } catch (err) {
-      console.error('Failed to load vault data:', err);
-      setError('Không thể tải dữ liệu vault');
-    } finally {
-      setIsLoading(false);
+    if (masterPassword && kdfParams) {
+      loadVault();
     }
-  };
+  }, [masterPassword, kdfParams, loadVault]);
+
 
   const handleAddEntry = () => {
     setEditingEntry(undefined);
@@ -118,41 +58,18 @@ export const VaultPage: React.FC = () => {
 
   const handleSaveEntry = async (entryData: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const now = new Date();
-
       if (editingEntry) {
         // Update existing entry
-        const updatedEntry: PasswordEntry = {
-          ...editingEntry,
-          ...entryData,
-          updatedAt: now,
-        };
-
-        setEntries(prev =>
-          prev.map(entry =>
-            entry.id === editingEntry.id ? updatedEntry : entry
-          )
-        );
+        updateEntry(editingEntry.id, entryData);
       } else {
         // Add new entry
-        const newEntry: PasswordEntry = {
-          ...entryData,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        setEntries(prev => [...prev, newEntry]);
+        addEntry(entryData);
       }
 
       setIsFormOpen(false);
       setEditingEntry(undefined);
-
-      // Here you would save to encrypted vault
-      // await saveVaultData();
     } catch (err) {
       console.error('Failed to save entry:', err);
-      setError('Không thể lưu mục');
     }
   };
 
@@ -162,13 +79,9 @@ export const VaultPage: React.FC = () => {
     }
 
     try {
-      setEntries(prev => prev.filter(entry => entry.id !== entryId));
-
-      // Here you would save to encrypted vault
-      // await saveVaultData();
+      removeEntry(entryId);
     } catch (err) {
       console.error('Failed to delete entry:', err);
-      setError('Không thể xóa mục');
     }
   };
 
@@ -187,7 +100,6 @@ export const VaultPage: React.FC = () => {
       }, 2000);
     } catch (err) {
       console.error('Failed to copy password:', err);
-      setError('Không thể sao chép mật khẩu');
     }
   };
 
@@ -196,8 +108,21 @@ export const VaultPage: React.FC = () => {
     setEditingEntry(undefined);
   };
 
+  const handleSaveVault = async () => {
+    await saveVault();
+  };
+
+  const handleResolveConflict = async (choice: 'server' | 'local') => {
+    setIsResolvingConflict(true);
+    try {
+      await resolveConflict(choice);
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
   // Loading state
-  if (isLoading) {
+  if (isLoadingVault) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-center animate-fade-in">
@@ -266,9 +191,9 @@ export const VaultPage: React.FC = () => {
                 </svg>
                 <span className="hidden sm:inline">Cài đặt</span>
               </Link>
-              
+
               <ThemeToggle variant="dropdown" size="md" />
-              
+
               <div className="flex items-center gap-3 pl-4 border-l border-neutral-200 dark:border-neutral-800">
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                   {user?.name?.[0]?.toUpperCase() || 'U'}
@@ -282,6 +207,17 @@ export const VaultPage: React.FC = () => {
         </div>
       </nav>
 
+      {/* Sync Status Bar */}
+      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-200 dark:border-neutral-800 px-4 py-3">
+        <div className="container mx-auto max-w-6xl">
+          <VaultSyncStatusIndicator
+            status={syncStatus}
+            onSave={handleSaveVault}
+            className="justify-between"
+          />
+        </div>
+      </div>
+
       {/* Error notification */}
       {error && masterPassword && (
         <div className="card border-error-200 dark:border-error-800 bg-error-50 dark:bg-error-950 p-4 mx-4 mt-4">
@@ -291,7 +227,7 @@ export const VaultPage: React.FC = () => {
             </svg>
             <p className="text-sm text-error-700 dark:text-error-300 flex-1">{error}</p>
             <button
-              onClick={() => setError(null)}
+              onClick={clearError}
               className="text-error-400 hover:text-error-600 dark:hover:text-error-300 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,6 +254,15 @@ export const VaultPage: React.FC = () => {
         onCancel={handleFormCancel}
         isOpen={isFormOpen}
       />
+
+      {/* Conflict Resolution Modal */}
+      {conflict && (
+        <VaultConflictResolver
+          conflict={conflict}
+          onResolve={handleResolveConflict}
+          isResolving={isResolvingConflict}
+        />
+      )}
     </div>
   );
 };
