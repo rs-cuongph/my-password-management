@@ -47,7 +47,9 @@
   "cors": "^2.x.x", 
   "express-rate-limit": "^7.x.x",
   "@types/helmet": "^7.x.x",
-  "@types/cors": "^2.x.x"
+  "@types/cors": "^2.x.x",
+  "libsodium-wrappers": "^0.7.x",
+  "@types/libsodium-wrappers": "^0.7.x"
 }
 ```
 
@@ -98,6 +100,14 @@
 - Input sanitization
 - Security header addition
 
+### 8. DEK (Data Encryption Key) Management ✅
+- 256-bit DEK generation with secure randomness
+- XChaCha20-Poly1305 authenticated encryption for DEK wrapping
+- Secure memory clearing after use
+- Key rotation support with version management
+- Password-based master key derivation using Argon2id
+- Comprehensive API for vault encryption operations
+
 ## 🚀 Usage Examples
 
 ### Public Endpoints
@@ -139,6 +149,14 @@ async protectedEndpoint() {
 - `POST /api/v1/auth/setup-2fa` - 3 req/15min
 - `POST /api/v1/auth/verify-2fa` - 5 req/15min
 
+### DEK Endpoints (with sensitive rate limiting)
+- `POST /api/v1/security/dek/generate` - DEK generation
+- `POST /api/v1/security/dek/wrap` - DEK wrapping
+- `POST /api/v1/security/dek/unwrap` - DEK unwrapping
+- `POST /api/v1/security/dek/rotate` - Key rotation
+- `GET /api/v1/security/dek/master-key/generate` - Master key generation
+- `POST /api/v1/security/dek/master-key/derive` - Password-based key derivation
+
 ## 📊 Security Configuration
 
 ### Environment Variables
@@ -167,6 +185,10 @@ RATE_LIMIT_MAX_REQUESTS=100
 - [x] Secure error handling
 - [x] Security middleware active
 - [x] All endpoints properly protected
+- [x] DEK generation and wrapping implemented
+- [x] XChaCha20-Poly1305 encryption working
+- [x] Secure memory management active
+- [x] Key rotation support implemented
 - [x] Build successful
 - [x] Documentation complete
 
