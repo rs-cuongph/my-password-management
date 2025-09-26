@@ -39,8 +39,9 @@ export class EncryptionUtil {
       ]);
 
       return combined.toString('base64');
-    } catch (error) {
-      throw new Error(`Encryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Encryption failed: ${message}`);
     }
   }
 
@@ -71,8 +72,9 @@ export class EncryptionUtil {
       decrypted += decipher.final('utf8');
 
       return decrypted;
-    } catch (error) {
-      throw new Error(`Decryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Decryption failed: ${message}`);
     }
   }
 

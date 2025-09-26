@@ -25,13 +25,6 @@ interface TempTokenPayload {
   iat: number;
 }
 
-interface AuthTokenPayload {
-  sub: number;
-  type?: string;
-  exp: number;
-  iat: number;
-}
-
 @Injectable()
 export class AuthService {
   constructor(

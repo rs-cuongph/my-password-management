@@ -7,6 +7,22 @@ import {
 } from '../dto/vault.dto';
 import { EncryptedVaultPayloadDto } from '../dto/vault-payload.dto';
 
+interface VaultData {
+  id: number;
+  kdfJson: string;
+  wrappedDek: string;
+  blobCiphertext: string;
+  version: number;
+  lastUpdated: Date;
+  createdAt: Date;
+}
+
+interface UpsertVaultData {
+  kdfJson: string;
+  wrappedDek: string;
+  blobCiphertext: string;
+}
+
 @Injectable()
 export class VaultService {
   // Maximum vault size: 50MB
@@ -30,20 +46,28 @@ export class VaultService {
       }
 
       return {
-        kdfJson: vault.kdfJson,
+        kdfJson: JSON.parse(vault.kdfJson) as {
+          salt: string;
+          iterations: number;
+          memorySize: number;
+          parallelism: number;
+        },
         wrappedDek: vault.wrappedDek,
-        blobCiphertext: vault.blobCiphertext,
+        blobCiphertext: JSON.parse(
+          vault.blobCiphertext,
+        ) as EncryptedVaultPayloadDto,
         version: vault.version,
         lastUpdated: vault.lastUpdated?.toISOString(),
         metadata: {
-          entryCount: vault.blobCiphertext?.metadata?.entryCount || 0,
-          boardCount: vault.blobCiphertext?.metadata?.boardCount || 0,
-          checksum: vault.blobCiphertext?.metadata?.checksum,
+          entryCount: 0,
+          boardCount: 0,
+          checksum: undefined,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        `Failed to retrieve vault: ${error.message}`,
+        `Failed to retrieve vault: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -69,8 +93,10 @@ export class VaultService {
       const compressionUsed = vaultData.blobCiphertext.compressed;
 
       // Save vault data
-      const savedVault = await this.upsertVault(userId, {
-        ...vaultData,
+      await this.upsertVault(userId, {
+        kdfJson: JSON.stringify(vaultData.kdfJson),
+        wrappedDek: vaultData.wrappedDek,
+        blobCiphertext: JSON.stringify(vaultData.blobCiphertext),
         version: newVersion,
       });
 
@@ -92,9 +118,10 @@ export class VaultService {
           compressionUsed,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        `Failed to save vault: ${error.message}`,
+        `Failed to save vault: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -106,10 +133,11 @@ export class VaultService {
   async getCurrentVersion(userId: string): Promise<number> {
     try {
       const vault = await this.findVaultByUserId(userId);
-      return vault?.version || -1; // -1 indicates no vault exists
-    } catch (error) {
+      return vault?.version ?? -1; // -1 indicates no vault exists
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        `Failed to get vault version: ${error.message}`,
+        `Failed to get vault version: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -121,10 +149,11 @@ export class VaultService {
   async getLastUpdated(userId: string): Promise<Date | null> {
     try {
       const vault = await this.findVaultByUserId(userId);
-      return vault?.lastUpdated || null;
-    } catch (error) {
+      return vault?.lastUpdated ?? null;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        `Failed to get last updated: ${error.message}`,
+        `Failed to get last updated: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -133,7 +162,7 @@ export class VaultService {
   /**
    * Validate vault size constraints
    */
-  async validateVaultSize(vaultData: SaveVaultRequestDto): Promise<void> {
+  validateVaultSize(vaultData: SaveVaultRequestDto): void {
     const encryptedDataSize = Buffer.from(
       vaultData.blobCiphertext.encryptedData,
       'base64',
@@ -175,7 +204,7 @@ export class VaultService {
       Buffer.from(ciphertext.encryptedData, 'base64');
       Buffer.from(ciphertext.nonce, 'base64');
       Buffer.from(ciphertext.tag, 'base64');
-    } catch (error) {
+    } catch {
       throw new HttpException(
         'Invalid ciphertext: invalid base64 encoding',
         HttpStatus.BAD_REQUEST,
@@ -203,7 +232,7 @@ export class VaultService {
     // Validate algorithm
     if (ciphertext.algorithm !== 'xchacha20-poly1305') {
       throw new HttpException(
-        `Unsupported algorithm: ${ciphertext.algorithm}`,
+        `Unsupported algorithm: ${String(ciphertext.algorithm)}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -243,46 +272,77 @@ export class VaultService {
    * Find vault by user ID - placeholder implementation
    * This needs to be updated based on the actual Prisma schema
    */
-  private async findVaultByUserId(_userId: string): Promise<any> {
-    // TODO: Implement actual database query based on Prisma schema
-    // For now, returning null to indicate no implementation
-    // This would typically be something like:
-    // return await this.prisma.vault.findUnique({
-    //   where: { userId },
-    // });
-    return null;
+  private async findVaultByUserId(userId: string): Promise<VaultData | null> {
+    try {
+      return await this.prisma.userVault.findFirst({
+        where: { userId: parseInt(userId) },
+        select: {
+          id: true,
+          kdfJson: true,
+          wrappedDek: true,
+          blobCiphertext: true,
+          version: true,
+          lastUpdated: true,
+          createdAt: true,
+        },
+      });
+    } catch (error: unknown) {
+      console.error('Error finding vault by user ID:', error);
+      throw new HttpException(
+        'Failed to retrieve vault data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   /**
    * Upsert vault data - placeholder implementation
    * This needs to be updated based on the actual Prisma schema
    */
-  private async upsertVault(_userId: string, vaultData: any): Promise<any> {
-    // TODO: Implement actual database upsert based on Prisma schema
-    // This would typically be something like:
-    // return await this.prisma.vault.upsert({
-    //   where: { userId },
-    //   create: {
-    //     userId,
-    //     kdfJson: vaultData.kdfJson,
-    //     wrappedDek: vaultData.wrappedDek,
-    //     blobCiphertext: vaultData.blobCiphertext,
-    //     version: vaultData.version,
-    //     lastUpdated: new Date(),
-    //   },
-    //   update: {
-    //     kdfJson: vaultData.kdfJson,
-    //     wrappedDek: vaultData.wrappedDek,
-    //     blobCiphertext: vaultData.blobCiphertext,
-    //     version: vaultData.version,
-    //     lastUpdated: new Date(),
-    //   },
-    // });
+  private async upsertVault(
+    userId: string,
+    vaultData: UpsertVaultData & { version: number },
+  ): Promise<VaultData> {
+    try {
+      const userIdInt = parseInt(userId);
 
-    // Placeholder return
-    return {
-      version: vaultData.version,
-      lastUpdated: new Date(),
-    };
+      // First try to find existing vault
+      const existingVault = await this.prisma.userVault.findFirst({
+        where: { userId: userIdInt },
+      });
+
+      if (existingVault) {
+        // Update existing vault
+        return await this.prisma.userVault.update({
+          where: { id: existingVault.id },
+          data: {
+            kdfJson: vaultData.kdfJson,
+            wrappedDek: vaultData.wrappedDek,
+            blobCiphertext: vaultData.blobCiphertext,
+            version: vaultData.version,
+            lastUpdated: new Date(),
+          },
+        });
+      } else {
+        // Create new vault
+        return await this.prisma.userVault.create({
+          data: {
+            userId: userIdInt,
+            kdfJson: vaultData.kdfJson,
+            wrappedDek: vaultData.wrappedDek,
+            blobCiphertext: vaultData.blobCiphertext,
+            version: vaultData.version,
+            lastUpdated: new Date(),
+          },
+        });
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error upserting vault:', message);
+      throw new HttpException(
+        'Failed to save vault data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

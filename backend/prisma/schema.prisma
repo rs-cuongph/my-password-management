@@ -27,14 +27,14 @@ model User {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  vaults        Vault[]
+  vaults        UserVault[]
   recoveryCodes RecoveryCode[]
   sessions      Session[]
 
   @@map("users")
 }
 
-model Vault {
+model UserVault {
   id             Int      @id @default(autoincrement())
   userId         Int
   kdfJson        String // KDF parameters (Argon2 settings)
@@ -47,7 +47,7 @@ model Vault {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("vaults")
+  @@map("user_vaults")
 }
 
 model RecoveryCode {
