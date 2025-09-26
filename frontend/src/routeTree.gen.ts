@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TotpVerificationRouteImport } from './routes/totp-verification'
 import { Route as TotpSetupRouteImport } from './routes/totp-setup'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as MasterPasswordRouteImport } from './routes/master-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +31,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MasterPasswordRoute = MasterPasswordRouteImport.update({
+  id: '/master-password',
+  path: '/master-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/master-password': typeof MasterPasswordRoute
   '/register': typeof RegisterRoute
   '/totp-setup': typeof TotpSetupRoute
   '/totp-verification': typeof TotpVerificationRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/master-password': typeof MasterPasswordRoute
   '/register': typeof RegisterRoute
   '/totp-setup': typeof TotpSetupRoute
   '/totp-verification': typeof TotpVerificationRoute
@@ -59,19 +67,33 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/master-password': typeof MasterPasswordRoute
   '/register': typeof RegisterRoute
   '/totp-setup': typeof TotpSetupRoute
   '/totp-verification': typeof TotpVerificationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/totp-setup' | '/totp-verification'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/master-password'
+    | '/register'
+    | '/totp-setup'
+    | '/totp-verification'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/totp-setup' | '/totp-verification'
+  to:
+    | '/'
+    | '/login'
+    | '/master-password'
+    | '/register'
+    | '/totp-setup'
+    | '/totp-verification'
   id:
     | '__root__'
     | '/'
     | '/login'
+    | '/master-password'
     | '/register'
     | '/totp-setup'
     | '/totp-verification'
@@ -80,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  MasterPasswordRoute: typeof MasterPasswordRoute
   RegisterRoute: typeof RegisterRoute
   TotpSetupRoute: typeof TotpSetupRoute
   TotpVerificationRoute: typeof TotpVerificationRoute
@@ -108,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/master-password': {
+      id: '/master-password'
+      path: '/master-password'
+      fullPath: '/master-password'
+      preLoaderRoute: typeof MasterPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -128,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  MasterPasswordRoute: MasterPasswordRoute,
   RegisterRoute: RegisterRoute,
   TotpSetupRoute: TotpSetupRoute,
   TotpVerificationRoute: TotpVerificationRoute,

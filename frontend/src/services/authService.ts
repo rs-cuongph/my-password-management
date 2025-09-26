@@ -79,6 +79,11 @@ export const useLogin = () => {
 
       // Invalidate and refetch user queries
       queryClient.invalidateQueries({ queryKey: authKeys.all });
+
+      // Redirect to master password page after successful login
+      setTimeout(() => {
+        window.location.href = '/master-password';
+      }, 100);
     },
     onError: (error) => {
       console.error('Login failed:', error);

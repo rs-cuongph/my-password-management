@@ -1,6 +1,7 @@
 import React, { useEffect, ReactNode } from 'react';
 import { Navigate, useLocation } from '@tanstack/react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { shouldShowMasterPasswordPage } from '../stores/masterPasswordStore';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -47,6 +48,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!requireAuth && isAuthenticated) {
     const homeRedirect = redirectTo || '/';
     return <Navigate to={homeRedirect} replace />;
+  }
+
+  // Check master password status for authenticated users
+  if (requireAuth && isAuthenticated && shouldShowMasterPasswordPage()) {
+    // Don't redirect if already on master password page
+    if (location.pathname !== '/master-password') {
+      return <Navigate to="/master-password" replace />;
+    }
   }
 
   // Render children nếu auth status phù hợp

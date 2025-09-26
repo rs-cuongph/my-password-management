@@ -1,10 +1,44 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { useAuthStore } from '../stores/authStore';
+import { useMasterPasswordStore, getMasterPasswordStatus, startAutoLockTimer, stopAutoLockTimer, resetAutoLockTimer } from '../stores/masterPasswordStore';
 
 const HomePage: React.FC = () => {
   const { theme, language, setTheme, setLanguage } = useAppStore();
   const { isAuthenticated, user } = useAuthStore();
+  const { lock } = useMasterPasswordStore();
+
+  // Auto-lock functionality
+  useEffect(() => {
+    startAutoLockTimer();
+
+    // Listen for user activity to reset auto-lock timer
+    const handleActivity = () => {
+      resetAutoLockTimer();
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    // Listen for master password lock events
+    const handleMasterPasswordLock = () => {
+      lock();
+    };
+
+    window.addEventListener('master-password-locked', handleMasterPasswordLock);
+
+    return () => {
+      stopAutoLockTimer();
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+      window.removeEventListener('master-password-locked', handleMasterPasswordLock);
+    };
+  }, [lock]);
+
+  const masterPasswordStatus = getMasterPasswordStatus();
 
   const techStack = [
     'React 19',
@@ -82,7 +116,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Auth Status */}
-            <div className="text-center">
+            <div className="text-center space-y-3">
               <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
                 isAuthenticated
                   ? 'bg-green-100 text-green-800'
@@ -93,6 +127,27 @@ const HomePage: React.FC = () => {
                 }`}></div>
                 {isAuthenticated ? 'Đã đăng nhập' : 'Chưa đăng nhập'}
               </div>
+              
+              {/* Master Password Status */}
+              {isAuthenticated && (
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                  masterPasswordStatus.isUnlocked
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-orange-100 text-orange-800'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full mr-2 ${
+                    masterPasswordStatus.isUnlocked ? 'bg-blue-500' : 'bg-orange-500'
+                  }`}></div>
+                  {masterPasswordStatus.isUnlocked ? '🔓 Đã mở khóa' : '🔒 Đã khóa'}
+                </div>
+              )}
+              
+              {/* Auto-lock Timer */}
+              {isAuthenticated && masterPasswordStatus.isUnlocked && (
+                <div className="text-xs text-gray-500">
+                  Tự động khóa sau: {Math.ceil(masterPasswordStatus.timeUntilLock / 1000 / 60)} phút
+                </div>
+              )}
             </div>
 
             {/* Action Button */}
