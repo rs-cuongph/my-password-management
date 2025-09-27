@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { vaultService, VaultSyncStatus, VaultConflict } from '../services/vaultService';
-import { VaultPayload, PasswordEntry } from '../utils/vaultCrypto';
+import {
+  vaultService,
+} from '../services/vaultService';
+import type {
+  VaultSyncStatus,
+  VaultConflict,
+} from '../services/vaultService';
+import type { VaultPayload, PasswordEntry } from '../utils/vaultCrypto';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
 
 export interface UseVaultReturn {
@@ -24,7 +30,9 @@ export interface UseVaultReturn {
   // Actions
   loadVault: () => Promise<void>;
   saveVault: (force?: boolean) => Promise<void>;
-  addEntry: (entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  addEntry: (
+    entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ) => string;
   updateEntry: (entryId: string, updates: Partial<PasswordEntry>) => void;
   removeEntry: (entryId: string) => void;
   resolveConflict: (choice: 'server' | 'local') => Promise<void>;
@@ -36,7 +44,9 @@ export const useVault = (): UseVaultReturn => {
   const [vault, setVault] = useState<VaultPayload | null>(null);
   const [isLoadingVault, setIsLoadingVault] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<VaultSyncStatus>(vaultService.getSyncStatus());
+  const [syncStatus, setSyncStatus] = useState<VaultSyncStatus>(
+    vaultService.getSyncStatus()
+  );
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<VaultConflict | null>(null);
 
@@ -88,49 +98,62 @@ export const useVault = (): UseVaultReturn => {
     }
   }, [masterPassword, kdfParams]);
 
-  const saveVault = useCallback(async (force = false) => {
-    if (!masterPassword || !kdfParams) {
-      setError('Master password and KDF params required');
-      return;
-    }
-
-    setError(null);
-    setConflict(null);
-
-    try {
-      const result = await vaultService.saveVault(masterPassword, kdfParams, force);
-
-      if (!result.success) {
-        if (result.conflict) {
-          setConflict(result.conflict);
-        } else if (result.error) {
-          setError(result.error);
-        }
+  const saveVault = useCallback(
+    async (force = false) => {
+      if (!masterPassword || !kdfParams) {
+        setError('Master password and KDF params required');
+        return;
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to save vault');
-    }
-  }, [masterPassword, kdfParams]);
 
-  const addEntry = useCallback((entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      const entryId = vaultService.addPasswordEntry(entry);
       setError(null);
-      return entryId;
-    } catch (err: any) {
-      setError(err.message || 'Failed to add entry');
-      return '';
-    }
-  }, []);
+      setConflict(null);
 
-  const updateEntry = useCallback((entryId: string, updates: Partial<PasswordEntry>) => {
-    try {
-      vaultService.updatePasswordEntry(entryId, updates);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update entry');
-    }
-  }, []);
+      try {
+        const result = await vaultService.saveVault(
+          masterPassword,
+          kdfParams,
+          force
+        );
+
+        if (!result.success) {
+          if (result.conflict) {
+            setConflict(result.conflict);
+          } else if (result.error) {
+            setError(result.error);
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to save vault');
+      }
+    },
+    [masterPassword, kdfParams]
+  );
+
+  const addEntry = useCallback(
+    (entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+      try {
+        const entryId = vaultService.addPasswordEntry(entry);
+        setError(null);
+        return entryId;
+      } catch (err: any) {
+        setError(err.message || 'Failed to add entry');
+        return '';
+      }
+    },
+    []
+  );
+
+  const updateEntry = useCallback(
+    (entryId: string, updates: Partial<PasswordEntry>) => {
+      try {
+        vaultService.updatePasswordEntry(entryId, updates);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || 'Failed to update entry');
+      }
+    },
+    []
+  );
 
   const removeEntry = useCallback((entryId: string) => {
     try {
@@ -141,24 +164,32 @@ export const useVault = (): UseVaultReturn => {
     }
   }, []);
 
-  const resolveConflict = useCallback(async (choice: 'server' | 'local') => {
-    if (!conflict || !masterPassword || !kdfParams) return;
+  const resolveConflict = useCallback(
+    async (choice: 'server' | 'local') => {
+      if (!conflict || !masterPassword || !kdfParams) return;
 
-    setError(null);
+      setError(null);
 
-    try {
-      const result = await vaultService.resolveConflict(choice, masterPassword, kdfParams, conflict);
+      try {
+        const result = await vaultService.resolveConflict(
+          choice,
+          masterPassword,
+          kdfParams,
+          conflict
+        );
 
-      if (result.success) {
-        setConflict(null);
-        setVault(vaultService.getVault());
-      } else if (result.error) {
-        setError(result.error);
+        if (result.success) {
+          setConflict(null);
+          setVault(vaultService.getVault());
+        } else if (result.error) {
+          setError(result.error);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to resolve conflict');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to resolve conflict');
-    }
-  }, [conflict, masterPassword, kdfParams]);
+    },
+    [conflict, masterPassword, kdfParams]
+  );
 
   const clearError = useCallback(() => {
     setError(null);

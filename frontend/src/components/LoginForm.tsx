@@ -15,7 +15,7 @@ const LoginForm: React.FC = () => {
   const { screenReaderAnnouncements } = useAppStore();
 
   const { announceToScreenReader } = useAccessibility(formRef, {
-    announceToScreenReader: screenReaderAnnouncements
+    announceToScreenReader: screenReaderAnnouncements,
   });
 
   const loginMutation = useLogin();
@@ -52,7 +52,10 @@ const LoginForm: React.FC = () => {
         if (screenReaderAnnouncements) {
           const errorMessages = Object.values(fieldErrors);
           if (errorMessages.length > 0) {
-            announceToScreenReader(`Có ${errorMessages.length} lỗi trong form: ${errorMessages.join(', ')}`, 'assertive');
+            announceToScreenReader(
+              `Có ${errorMessages.length} lỗi trong form: ${errorMessages.join(', ')}`,
+              'assertive'
+            );
           }
         }
       }
@@ -69,7 +72,9 @@ const LoginForm: React.FC = () => {
 
     loginMutation.mutate(formData, {
       onError: (error: any) => {
-        const errorMessage = error?.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        const errorMessage =
+          error?.response?.data?.message ||
+          'Đăng nhập thất bại. Vui lòng thử lại.';
         setErrors({ general: errorMessage });
 
         if (screenReaderAnnouncements) {
@@ -80,21 +85,39 @@ const LoginForm: React.FC = () => {
         if (screenReaderAnnouncements) {
           announceToScreenReader('Đăng nhập thành công', 'polite');
         }
-      }
+      },
     });
   };
 
   return (
-    <section className="max-w-md mx-auto card p-6" role="main" aria-labelledby="login-heading">
-      <h1 id="login-heading" className="text-2xl font-bold text-center text-neutral-900 dark:text-neutral-100 mb-6">
+    <section
+      className="max-w-md mx-auto card p-6"
+      role="main"
+      aria-labelledby="login-heading"
+    >
+      <h1
+        id="login-heading"
+        className="text-2xl font-bold text-center text-neutral-900 dark:text-neutral-100 mb-6"
+      >
         Đăng Nhập
       </h1>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        noValidate
+      >
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Email <span className="text-error-500" aria-label="bắt buộc">*</span>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+          >
+            Email{' '}
+            <span className="text-error-500" aria-label="bắt buộc">
+              *
+            </span>
           </label>
           <input
             id="email"
@@ -110,7 +133,11 @@ const LoginForm: React.FC = () => {
             aria-describedby={errors.email ? 'email-error' : undefined}
           />
           {errors.email && (
-            <p id="email-error" className="mt-1 text-sm text-error-600 dark:text-error-400" role="alert">
+            <p
+              id="email-error"
+              className="mt-1 text-sm text-error-600 dark:text-error-400"
+              role="alert"
+            >
               <span className="sr-only">Lỗi: </span>
               {errors.email}
             </p>
@@ -119,8 +146,14 @@ const LoginForm: React.FC = () => {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Mật khẩu <span className="text-error-500" aria-label="bắt buộc">*</span>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+          >
+            Mật khẩu{' '}
+            <span className="text-error-500" aria-label="bắt buộc">
+              *
+            </span>
           </label>
           <input
             id="password"
@@ -136,7 +169,11 @@ const LoginForm: React.FC = () => {
             aria-describedby={errors.password ? 'password-error' : undefined}
           />
           {errors.password && (
-            <p id="password-error" className="mt-1 text-sm text-error-600 dark:text-error-400" role="alert">
+            <p
+              id="password-error"
+              className="mt-1 text-sm text-error-600 dark:text-error-400"
+              role="alert"
+            >
               <span className="sr-only">Lỗi: </span>
               {errors.password}
             </p>
@@ -145,7 +182,11 @@ const LoginForm: React.FC = () => {
 
         {/* General Error */}
         {errors.general && (
-          <div className="bg-error-50 dark:bg-error-950 border border-error-200 dark:border-error-800 rounded-xl p-3" role="alert" aria-live="assertive">
+          <div
+            className="bg-error-50 dark:bg-error-950 border border-error-200 dark:border-error-800 rounded-xl p-3"
+            role="alert"
+            aria-live="assertive"
+          >
             <p className="text-sm text-error-600 dark:text-error-400">
               <span className="sr-only">Lỗi: </span>
               {errors.general}
@@ -158,7 +199,9 @@ const LoginForm: React.FC = () => {
           type="submit"
           disabled={loginMutation.isPending}
           className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-describedby={loginMutation.isPending ? 'loading-status' : undefined}
+          aria-describedby={
+            loginMutation.isPending ? 'loading-status' : undefined
+          }
         >
           {loginMutation.isPending ? (
             <div className="flex items-center justify-center">
@@ -169,8 +212,19 @@ const LoginForm: React.FC = () => {
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               <span id="loading-status">Đang đăng nhập...</span>
             </div>

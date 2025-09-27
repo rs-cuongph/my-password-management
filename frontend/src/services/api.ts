@@ -39,10 +39,8 @@ api.interceptors.response.use(
 );
 
 export const apiService = {
-  get: <T = any>(url: string): Promise<ApiResponse<T>> => api.get(url),
-  post: <T = any>(url: string, data?: any): Promise<ApiResponse<T>> =>
-    api.post(url, data),
-  put: <T = any>(url: string, data?: any): Promise<ApiResponse<T>> =>
-    api.put(url, data),
-  delete: <T = any>(url: string): Promise<ApiResponse<T>> => api.delete(url),
+  get: <T = any>(url: string): Promise<T> => api.get(url),
+  post: <T = any>(url: string, data?: any): Promise<T> => api.post(url, data),
+  put: <T = any>(url: string, data?: any): Promise<T> => api.put(url, data),
+  delete: <T = any>(url: string): Promise<T> => api.delete(url),
 };

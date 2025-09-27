@@ -1,19 +1,24 @@
-# React + TypeScript + Vite
+# My Password Management - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern and secure password management application built with React, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Secure Password Storage**: End-to-end encryption with Argon2 key derivation
+- **Modern UI**: Beautiful interface built with React and Tailwind CSS
+- **Accessibility**: Full keyboard navigation and screen reader support
+- **Theme Support**: Light and dark mode with high contrast options
+- **Export/Import**: Backup and restore your password vault
+- **Two-Factor Authentication**: TOTP support for enhanced security
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS 3.4
+- **Routing**: TanStack Router
+- **State Management**: Zustand
+- **Encryption**: Argon2, XChaCha20-Poly1305
+- **Forms**: Valibot for validation
 
 ```js
 export default defineConfig([
@@ -71,3 +76,51 @@ export default defineConfig([
   },
 ])
 ```
+
+## Environment Configuration
+
+The Vite development server can be configured using environment variables:
+
+### Available Environment Variables
+
+- `VITE_PORT`: Port for the development server (default: 5173)
+- `VITE_HOST`: Host for the development server (default: localhost)
+- `VITE_API_URL`: API base URL for backend communication (default: http://localhost:3000)
+
+### Usage Examples
+
+1. **Using environment files:**
+   ```bash
+   # Copy the example file and modify as needed
+   cp .env.example .env.local
+   
+   # Edit .env.local with your preferred settings
+   VITE_PORT=3001
+   VITE_HOST=0.0.0.0
+   ```
+
+2. **Using inline environment variables:**
+   ```bash
+   # Run on port 3001
+   VITE_PORT=3001 npm run dev
+   
+   # Run on all interfaces (accessible from other devices)
+   VITE_HOST=0.0.0.0 npm run dev
+   
+   # Run on custom port and host
+   VITE_PORT=8080 VITE_HOST=0.0.0.0 npm run dev
+   ```
+
+3. **Using npm scripts:**
+   ```bash
+   # Use the dev:port script for quick port changes
+   npm run dev:port 3001
+   ```
+
+### Environment File Priority
+
+Vite loads environment variables in this order (higher priority overrides lower):
+1. `.env.local` (always ignored by git)
+2. `.env.development` (only loaded in development)
+3. `.env` (always loaded)
+

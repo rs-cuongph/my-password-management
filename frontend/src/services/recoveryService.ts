@@ -3,7 +3,7 @@ import type {
   GenerateRecoveryCodeResponse,
   ValidateRecoveryCodeResponse,
   RecoverDEKResponse,
-  RecoveryCodeStats
+  RecoveryCodeStats,
 } from '../types/recovery';
 
 export interface GenerateRecoveryCodeRequest {
@@ -34,29 +34,37 @@ export interface RecoverDEKRequest {
 }
 
 class RecoveryService {
-  private readonly baseUrl = '/api/v1/security/recovery-code';
+  private readonly baseUrl = '/security/recovery-code';
 
   /**
    * Generate recovery code for a DEK
    */
-  async generateRecoveryCode(request: GenerateRecoveryCodeRequest): Promise<GenerateRecoveryCodeResponse> {
+  async generateRecoveryCode(
+    request: GenerateRecoveryCodeRequest
+  ): Promise<GenerateRecoveryCodeResponse> {
     try {
       const response = await api.post(`${this.baseUrl}/generate`, request);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Recovery code generation failed');
+      throw new Error(
+        error.response?.data?.message || 'Recovery code generation failed'
+      );
     }
   }
 
   /**
    * Validate recovery code format and derivation
    */
-  async validateRecoveryCode(request: ValidateRecoveryCodeRequest): Promise<ValidateRecoveryCodeResponse> {
+  async validateRecoveryCode(
+    request: ValidateRecoveryCodeRequest
+  ): Promise<ValidateRecoveryCodeResponse> {
     try {
       const response = await api.post(`${this.baseUrl}/validate`, request);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Recovery code validation failed');
+      throw new Error(
+        error.response?.data?.message || 'Recovery code validation failed'
+      );
     }
   }
 
@@ -80,7 +88,9 @@ class RecoveryService {
       const response = await api.get(`${this.baseUrl}/stats`);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to get recovery stats');
+      throw new Error(
+        error.response?.data?.message || 'Failed to get recovery stats'
+      );
     }
   }
 
@@ -113,13 +123,19 @@ class RecoveryService {
 
     // Check length (should be 32 characters)
     if (cleanCode.length !== 32) {
-      return { valid: false, error: 'Recovery code must be 32 characters long' };
+      return {
+        valid: false,
+        error: 'Recovery code must be 32 characters long',
+      };
     }
 
     // Check if it contains only valid Base32 characters (no 0, 1, 8, 9)
     const base32Pattern = /^[A-Z2-7]+$/;
     if (!base32Pattern.test(cleanCode)) {
-      return { valid: false, error: 'Recovery code contains invalid characters' };
+      return {
+        valid: false,
+        error: 'Recovery code contains invalid characters',
+      };
     }
 
     return { valid: true };

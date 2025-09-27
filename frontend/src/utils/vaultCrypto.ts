@@ -17,16 +17,16 @@ export interface VaultEntry {
 // Password Manager Entry Interface
 export interface PasswordEntry {
   id: string;
-  site: string;           // Website/service name
-  username: string;       // Username/email
-  password: string;       // Encrypted password
-  hint?: string;          // Password hint
-  url?: string;           // Website URL
-  notes?: string;         // Additional notes
-  tags?: string[];        // Tags for organization
+  site: string; // Website/service name
+  username: string; // Username/email
+  password: string; // Encrypted password
+  hint?: string; // Password hint
+  url?: string; // Website URL
+  notes?: string; // Additional notes
+  tags?: string[]; // Tags for organization
   createdAt: Date;
   updatedAt: Date;
-  lastUsed?: Date;        // Last time password was used
+  lastUsed?: Date; // Last time password was used
   metadata?: Record<string, any>;
 }
 
@@ -61,7 +61,7 @@ export interface VaultMetadata {
 }
 
 export interface VaultPayload {
-  entries: VaultEntry[]; // Kanban entries
+  entries: VaultEntry[]; // Password entries
   passwordEntries?: PasswordEntry[]; // Password manager entries
   boards: VaultBoard[];
   metadata: VaultMetadata;
@@ -116,7 +116,7 @@ export interface VaultEncryptionStats {
  * Vault Crypto Service for client-side vault operations
  */
 export class VaultCryptoService {
-  private static readonly API_BASE = '/api/v1/security/vault-payload';
+  private static readonly API_BASE = '/security/vault-payload';
 
   /**
    * Encrypt vault payload with password
@@ -129,8 +129,8 @@ export class VaultCryptoService {
   ): Promise<VaultEncryptionResult> {
     try {
       // Derive master key from password
-      const { masterKey } = await deriveMasterKey(password, kdfParams.salt);
-      
+      await deriveMasterKey(password, kdfParams.salt);
+
       // Convert master key to base64 for API
       const salt = kdfParams.salt;
 
@@ -138,7 +138,7 @@ export class VaultCryptoService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`,
+          Authorization: `Bearer ${this.getAuthToken()}`,
         },
         body: JSON.stringify({
           payload: this.serializePayload(payload),
@@ -155,12 +155,16 @@ export class VaultCryptoService {
 
       const result = await response.json();
       return {
-        encryptedPayload: this.deserializeEncryptedPayload(result.encryptedPayload),
+        encryptedPayload: this.deserializeEncryptedPayload(
+          result.encryptedPayload
+        ),
         wrappedDEK: result.wrappedDEK,
         stats: result.stats,
       };
     } catch (error) {
-      throw new Error(`Failed to encrypt vault: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to encrypt vault: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -179,7 +183,7 @@ export class VaultCryptoService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`,
+          Authorization: `Bearer ${this.getAuthToken()}`,
         },
         body: JSON.stringify({
           encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
@@ -203,20 +207,24 @@ export class VaultCryptoService {
         warnings: result.warnings,
       };
     } catch (error) {
-      throw new Error(`Failed to decrypt vault: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to decrypt vault: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Get vault encryption statistics
    */
-  static async getVaultStats(encryptedPayload: EncryptedVaultPayload): Promise<VaultEncryptionStats> {
+  static async getVaultStats(
+    encryptedPayload: EncryptedVaultPayload
+  ): Promise<VaultEncryptionStats> {
     try {
       const response = await fetch(`${this.API_BASE}/stats`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`,
+          Authorization: `Bearer ${this.getAuthToken()}`,
         },
         body: JSON.stringify({
           encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
@@ -231,7 +239,9 @@ export class VaultCryptoService {
       const result = await response.json();
       return result.stats;
     } catch (error) {
-      throw new Error(`Failed to get vault stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get vault stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -241,13 +251,13 @@ export class VaultCryptoService {
   static createEmptyVault(): VaultPayload {
     const now = new Date();
     return {
-      entries: [], // Kanban entries
+      entries: [], // Password entries
       passwordEntries: [], // Password manager entries
       boards: [
         {
           id: crypto.randomUUID(),
           name: 'My Board',
-          description: 'Default kanban board',
+          description: 'Default password vault',
           columns: ['Todo', 'In Progress', 'Done'],
           settings: {
             color: '#3b82f6',
@@ -271,7 +281,10 @@ export class VaultCryptoService {
   /**
    * Add password entry to vault
    */
-  static addPasswordEntry(vault: VaultPayload, entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>): VaultPayload {
+  static addPasswordEntry(
+    vault: VaultPayload,
+    entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ): VaultPayload {
     const now = new Date();
     const newEntry: PasswordEntry = {
       ...entry,
@@ -285,7 +298,8 @@ export class VaultCryptoService {
       passwordEntries: [...(vault.passwordEntries || []), newEntry],
       metadata: {
         ...vault.metadata,
-        entryCount: vault.entries.length + (vault.passwordEntries?.length || 0) + 1,
+        entryCount:
+          vault.entries.length + (vault.passwordEntries?.length || 0) + 1,
         lastSyncAt: now,
       },
     };
@@ -294,12 +308,14 @@ export class VaultCryptoService {
   /**
    * Update password entry in vault
    */
-  static updatePasswordEntry(vault: VaultPayload, entryId: string, updates: Partial<PasswordEntry>): VaultPayload {
+  static updatePasswordEntry(
+    vault: VaultPayload,
+    entryId: string,
+    updates: Partial<PasswordEntry>
+  ): VaultPayload {
     const now = new Date();
-    const passwordEntries = (vault.passwordEntries || []).map(entry =>
-      entry.id === entryId
-        ? { ...entry, ...updates, updatedAt: now }
-        : entry
+    const passwordEntries = (vault.passwordEntries || []).map((entry) =>
+      entry.id === entryId ? { ...entry, ...updates, updatedAt: now } : entry
     );
 
     return {
@@ -315,9 +331,14 @@ export class VaultCryptoService {
   /**
    * Remove password entry from vault
    */
-  static removePasswordEntry(vault: VaultPayload, entryId: string): VaultPayload {
+  static removePasswordEntry(
+    vault: VaultPayload,
+    entryId: string
+  ): VaultPayload {
     const now = new Date();
-    const passwordEntries = (vault.passwordEntries || []).filter(entry => entry.id !== entryId);
+    const passwordEntries = (vault.passwordEntries || []).filter(
+      (entry) => entry.id !== entryId
+    );
 
     return {
       ...vault,
@@ -331,9 +352,12 @@ export class VaultCryptoService {
   }
 
   /**
-   * Add kanban entry to vault
+   * Add password entry to vault
    */
-  static addEntry(vault: VaultPayload, entry: Omit<VaultEntry, 'id' | 'createdAt' | 'updatedAt'>): VaultPayload {
+  static addEntry(
+    vault: VaultPayload,
+    entry: Omit<VaultEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ): VaultPayload {
     const now = new Date();
     const newEntry: VaultEntry = {
       ...entry,
@@ -356,12 +380,14 @@ export class VaultCryptoService {
   /**
    * Update entry in vault
    */
-  static updateEntry(vault: VaultPayload, entryId: string, updates: Partial<VaultEntry>): VaultPayload {
+  static updateEntry(
+    vault: VaultPayload,
+    entryId: string,
+    updates: Partial<VaultEntry>
+  ): VaultPayload {
     const now = new Date();
-    const entries = vault.entries.map(entry =>
-      entry.id === entryId
-        ? { ...entry, ...updates, updatedAt: now }
-        : entry
+    const entries = vault.entries.map((entry) =>
+      entry.id === entryId ? { ...entry, ...updates, updatedAt: now } : entry
     );
 
     return {
@@ -379,7 +405,7 @@ export class VaultCryptoService {
    */
   static removeEntry(vault: VaultPayload, entryId: string): VaultPayload {
     const now = new Date();
-    const entries = vault.entries.filter(entry => entry.id !== entryId);
+    const entries = vault.entries.filter((entry) => entry.id !== entryId);
 
     return {
       ...vault,
@@ -395,7 +421,10 @@ export class VaultCryptoService {
   /**
    * Add board to vault
    */
-  static addBoard(vault: VaultPayload, board: Omit<VaultBoard, 'id' | 'createdAt' | 'updatedAt'>): VaultPayload {
+  static addBoard(
+    vault: VaultPayload,
+    board: Omit<VaultBoard, 'id' | 'createdAt' | 'updatedAt'>
+  ): VaultPayload {
     const now = new Date();
     const newBoard: VaultBoard = {
       ...board,
@@ -418,12 +447,14 @@ export class VaultCryptoService {
   /**
    * Update board in vault
    */
-  static updateBoard(vault: VaultPayload, boardId: string, updates: Partial<VaultBoard>): VaultPayload {
+  static updateBoard(
+    vault: VaultPayload,
+    boardId: string,
+    updates: Partial<VaultBoard>
+  ): VaultPayload {
     const now = new Date();
-    const boards = vault.boards.map(board =>
-      board.id === boardId
-        ? { ...board, ...updates, updatedAt: now }
-        : board
+    const boards = vault.boards.map((board) =>
+      board.id === boardId ? { ...board, ...updates, updatedAt: now } : board
     );
 
     return {
@@ -441,7 +472,7 @@ export class VaultCryptoService {
    */
   static removeBoard(vault: VaultPayload, boardId: string): VaultPayload {
     const now = new Date();
-    const boards = vault.boards.filter(board => board.id !== boardId);
+    const boards = vault.boards.filter((board) => board.id !== boardId);
 
     return {
       ...vault,
@@ -472,13 +503,16 @@ export class VaultCryptoService {
 
     // Check metadata structure
     const { metadata } = payload;
-    if (!metadata.version || !metadata.lastSyncAt || 
-        typeof metadata.entryCount !== 'number' || 
-        typeof metadata.boardCount !== 'number') {
+    if (
+      !metadata.version ||
+      !metadata.lastSyncAt ||
+      typeof metadata.entryCount !== 'number' ||
+      typeof metadata.boardCount !== 'number'
+    ) {
       return false;
     }
 
-    // Validate kanban entries
+    // Validate password entries
     for (const entry of payload.entries) {
       if (!entry.id || !entry.title || !entry.status || !entry.priority) {
         return false;
@@ -516,27 +550,32 @@ export class VaultCryptoService {
    * Get vault summary statistics
    */
   static getVaultSummary(vault: VaultPayload): {
-    totalKanbanEntries: number;
     totalPasswordEntries: number;
     totalBoards: number;
     entriesByStatus: Record<string, number>;
     entriesByPriority: Record<string, number>;
     lastUpdated: Date;
   } {
-    const entriesByStatus = vault.entries.reduce((acc, entry) => {
-      acc[entry.status] = (acc[entry.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const entriesByStatus = vault.entries.reduce(
+      (acc, entry) => {
+        acc[entry.status] = (acc[entry.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const entriesByPriority = vault.entries.reduce((acc, entry) => {
-      acc[entry.priority] = (acc[entry.priority] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const entriesByPriority = vault.entries.reduce(
+      (acc, entry) => {
+        acc[entry.priority] = (acc[entry.priority] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Calculate last updated across all entries
     let lastUpdated = vault.metadata.lastSyncAt;
 
-    // Check kanban entries
+    // Check password entries
     for (const entry of vault.entries) {
       if (entry.updatedAt > lastUpdated) {
         lastUpdated = entry.updatedAt;
@@ -553,8 +592,7 @@ export class VaultCryptoService {
     }
 
     return {
-      totalKanbanEntries: vault.entries.length,
-      totalPasswordEntries: vault.passwordEntries?.length || 0,
+      totalPasswordEntries: vault.entries.length,
       totalBoards: vault.boards.length,
       entriesByStatus,
       entriesByPriority,
@@ -566,19 +604,20 @@ export class VaultCryptoService {
   private static serializePayload(payload: VaultPayload): any {
     return {
       ...payload,
-      entries: payload.entries.map(entry => ({
+      entries: payload.entries.map((entry) => ({
         ...entry,
         dueDate: entry.dueDate?.toISOString(),
         createdAt: entry.createdAt.toISOString(),
         updatedAt: entry.updatedAt.toISOString(),
       })),
-      passwordEntries: payload.passwordEntries?.map(entry => ({
-        ...entry,
-        createdAt: entry.createdAt.toISOString(),
-        updatedAt: entry.updatedAt.toISOString(),
-        lastUsed: entry.lastUsed?.toISOString(),
-      })) || [],
-      boards: payload.boards.map(board => ({
+      passwordEntries:
+        payload.passwordEntries?.map((entry) => ({
+          ...entry,
+          createdAt: entry.createdAt.toISOString(),
+          updatedAt: entry.updatedAt.toISOString(),
+          lastUsed: entry.lastUsed?.toISOString(),
+        })) || [],
+      boards: payload.boards.map((board) => ({
         ...board,
         createdAt: board.createdAt.toISOString(),
         updatedAt: board.updatedAt.toISOString(),
@@ -599,12 +638,13 @@ export class VaultCryptoService {
         createdAt: new Date(entry.createdAt),
         updatedAt: new Date(entry.updatedAt),
       })),
-      passwordEntries: payload.passwordEntries?.map((entry: any) => ({
-        ...entry,
-        createdAt: new Date(entry.createdAt),
-        updatedAt: new Date(entry.updatedAt),
-        lastUsed: entry.lastUsed ? new Date(entry.lastUsed) : undefined,
-      })) || [],
+      passwordEntries:
+        payload.passwordEntries?.map((entry: any) => ({
+          ...entry,
+          createdAt: new Date(entry.createdAt),
+          updatedAt: new Date(entry.updatedAt),
+          lastUsed: entry.lastUsed ? new Date(entry.lastUsed) : undefined,
+        })) || [],
       boards: payload.boards.map((board: any) => ({
         ...board,
         createdAt: new Date(board.createdAt),
@@ -617,14 +657,18 @@ export class VaultCryptoService {
     };
   }
 
-  private static serializeEncryptedPayload(encryptedPayload: EncryptedVaultPayload): any {
+  private static serializeEncryptedPayload(
+    encryptedPayload: EncryptedVaultPayload
+  ): any {
     return {
       ...encryptedPayload,
       createdAt: encryptedPayload.createdAt.toISOString(),
     };
   }
 
-  private static deserializeEncryptedPayload(encryptedPayload: any): EncryptedVaultPayload {
+  private static deserializeEncryptedPayload(
+    encryptedPayload: any
+  ): EncryptedVaultPayload {
     return {
       ...encryptedPayload,
       createdAt: new Date(encryptedPayload.createdAt),
@@ -634,7 +678,8 @@ export class VaultCryptoService {
   private static getAuthToken(): string {
     // Get token from your auth store/context
     // This is a placeholder - implement according to your auth system
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const token =
+      localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (!token) {
       throw new Error('No authentication token found');
     }

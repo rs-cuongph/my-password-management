@@ -16,11 +16,6 @@ export const LoginSchema = v.object({
 
 // Register schema
 export const RegisterSchema = v.object({
-  name: v.pipe(
-    v.string('Tên là bắt buộc'),
-    v.nonEmpty('Tên không được để trống'),
-    v.minLength(2, 'Tên phải có ít nhất 2 ký tự')
-  ),
   email: v.pipe(
     v.string('Email là bắt buộc'),
     v.nonEmpty('Email không được để trống'),
@@ -53,21 +48,13 @@ export const RegisterWithConfirmSchema = v.pipe(
 
 // User profile schema
 export const UserProfileSchema = v.object({
-  name: v.pipe(
-    v.string('Tên là bắt buộc'),
-    v.nonEmpty('Tên không được để trống'),
-    v.minLength(2, 'Tên phải có ít nhất 2 ký tự')
-  ),
   email: v.pipe(
     v.string('Email là bắt buộc'),
     v.nonEmpty('Email không được để trống'),
     v.email('Email không hợp lệ')
   ),
   phone: v.optional(
-    v.pipe(
-      v.string(),
-      v.regex(/^[0-9+\-\s()]+$/, 'Số điện thoại không hợp lệ')
-    )
+    v.pipe(v.string(), v.regex(/^[0-9+\-\s()]+$/, 'Số điện thoại không hợp lệ'))
   ),
   avatar: v.optional(v.string()),
 });
@@ -127,7 +114,10 @@ export const TOTPVerificationSchema = v.object({
 // Type exports
 export type LoginInput = v.InferInput<typeof LoginSchema>;
 export type RegisterInput = v.InferInput<typeof RegisterWithConfirmSchema>;
+export type RegisterApiInput = v.InferInput<typeof RegisterSchema>; // API input without confirmPassword
 export type UserProfileInput = v.InferInput<typeof UserProfileSchema>;
-export type ChangePasswordInput = v.InferInput<typeof ChangePasswordWithConfirmSchema>;
+export type ChangePasswordInput = v.InferInput<
+  typeof ChangePasswordWithConfirmSchema
+>;
 export type TOTPSetupInput = v.InferInput<typeof TOTPSetupSchema>;
 export type TOTPVerificationInput = v.InferInput<typeof TOTPVerificationSchema>;

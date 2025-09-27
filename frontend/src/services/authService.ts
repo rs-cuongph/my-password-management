@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from './api';
 import { useAuthStore } from '../stores/authStore';
-import type { LoginInput, RegisterInput, UserProfileInput, TOTPSetupInput, TOTPVerificationInput } from '../schemas/auth';
+import type {
+  LoginInput,
+  RegisterApiInput,
+  UserProfileInput,
+  TOTPSetupInput,
+  TOTPVerificationInput,
+} from '../schemas/auth';
 import type { User, ApiResponse } from '../types';
 
 // Query keys
@@ -41,28 +47,27 @@ interface TOTPVerificationResponse {
 
 // API functions
 const authApi = {
-  login: (data: LoginInput): Promise<ApiResponse<LoginResponse>> =>
+  login: (data: LoginInput): Promise<LoginResponse> =>
     apiService.post('/auth/login', data),
 
-  register: (data: RegisterInput): Promise<ApiResponse<RegisterResponse>> =>
+  register: (data: RegisterApiInput): Promise<RegisterResponse> =>
     apiService.post('/auth/register', data),
 
-  logout: (): Promise<ApiResponse<{ message: string }>> =>
-    apiService.post('/auth/logout'),
+  logout: (): Promise<{ message: string }> => apiService.post('/auth/logout'),
 
-  getMe: (): Promise<ApiResponse<User>> =>
-    apiService.get('/auth/me'),
+  getMe: (): Promise<User> => apiService.get('/auth/me'),
 
-  updateProfile: (data: UserProfileInput): Promise<ApiResponse<User>> =>
+  updateProfile: (data: UserProfileInput): Promise<User> =>
     apiService.put('/auth/profile', data),
 
-  refreshToken: (): Promise<ApiResponse<LoginResponse>> =>
-    apiService.post('/auth/refresh'),
+  refreshToken: (): Promise<LoginResponse> => apiService.post('/auth/refresh'),
 
-  setupTOTP: (data: TOTPSetupInput): Promise<ApiResponse<TOTPSetupResponse>> =>
+  setupTOTP: (data: TOTPSetupInput): Promise<TOTPSetupResponse> =>
     apiService.post('/auth/setup-2fa', data),
 
-  verifyTOTP: (data: TOTPVerificationInput): Promise<ApiResponse<TOTPVerificationResponse>> =>
+  verifyTOTP: (
+    data: TOTPVerificationInput
+  ): Promise<TOTPVerificationResponse> =>
     apiService.post('/auth/verify-2fa', data),
 };
 
@@ -74,12 +79,15 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: async (response) => {
-      const { success, tempToken, kdfSalt, need2fa } = response.data;
-      
+      const { success, tempToken, kdfSalt, need2fa } = response;
+
       if (success && tempToken) {
         // Store kdfSalt in sessionStorage for master password page
         sessionStorage.setItem('kdfSalt', kdfSalt);
-        
+
+        // Store tempToken in localStorage for API calls
+        localStorage.setItem('token', tempToken);
+
         if (need2fa) {
           // Redirect to TOTP verification page
           setTimeout(() => {
@@ -88,16 +96,16 @@ export const useLogin = () => {
         } else {
           // Get user info and complete login
           try {
-            const userResponse = await authApi.getMe();
-            const user = { ...userResponse.data, kdfSalt };
-            login(user, tempToken);
-            
+            const user = await authApi.getMe();
+            const userWithKdf = { ...user, kdfSalt };
+            login(userWithKdf, tempToken);
+
             // Set user data in cache
-            queryClient.setQueryData(authKeys.me(), user);
-            
+            queryClient.setQueryData(authKeys.me(), userWithKdf);
+
             // Invalidate and refetch user queries
             queryClient.invalidateQueries({ queryKey: authKeys.all });
-            
+
             // Redirect to master password page after successful login
             setTimeout(() => {
               window.location.href = '/master-password';
@@ -174,7 +182,7 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationFn: authApi.updateProfile,
     onSuccess: (response) => {
-      const updatedUser = response.data;
+      const updatedUser = response;
 
       // Update user in auth store
       const { setUser } = useAuthStore.getState();
@@ -196,7 +204,7 @@ export const useRefreshToken = () => {
   return useMutation({
     mutationFn: () => authApi.refreshToken(),
     onSuccess: (response) => {
-      const { tempToken } = response.data;
+      const { tempToken } = response;
       setToken(tempToken || '');
 
       // Invalidate all queries to refetch with new token
@@ -228,21 +236,21 @@ export const useVerifyTOTP = () => {
   return useMutation({
     mutationFn: authApi.verifyTOTP,
     onSuccess: async (response) => {
-      if (response.data.success && response.data.accessToken) {
-        const { accessToken, kdfSalt } = response.data;
-        
+      if (response.success && response.accessToken) {
+        const { accessToken, kdfSalt } = response;
+
         // Store kdfSalt in sessionStorage for master password page
         if (kdfSalt) {
           sessionStorage.setItem('kdfSalt', kdfSalt);
         }
-        
+
         // Get user from store or make API call to get user info
         const { user } = useAuthStore.getState();
         if (user) {
           const userWithSalt = { ...user, kdfSalt };
           login(userWithSalt, accessToken);
           queryClient.invalidateQueries({ queryKey: authKeys.all });
-          
+
           // Redirect to master password page
           setTimeout(() => {
             window.location.href = '/master-password';

@@ -151,15 +151,15 @@
   ::-webkit-scrollbar {
     @apply w-2;
   }
-  
+
   ::-webkit-scrollbar-track {
     @apply bg-neutral-100 dark:bg-neutral-800;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     @apply bg-neutral-300 dark:bg-neutral-600 rounded-full;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-neutral-400 dark:bg-neutral-500;
   }
@@ -170,72 +170,77 @@
   .toast-enter {
     @apply transform translate-x-full opacity-0;
   }
-  
+
   .toast-enter-active {
     @apply transform translate-x-0 opacity-100;
     @apply transition-all duration-300 ease-out;
   }
-  
+
   .toast-exit {
     @apply transform translate-x-0 opacity-100;
   }
-  
+
   .toast-exit-active {
     @apply transform translate-x-full opacity-0;
     @apply transition-all duration-200 ease-in;
   }
-  
+
   .toast-progress-bar {
     @apply absolute bottom-0 left-0 h-1 bg-current opacity-30;
     @apply transition-all duration-100 ease-linear;
   }
-  
+
   /* Status indicator animations */
   .status-pulse {
     @apply animate-pulse;
   }
-  
+
   .status-spin {
     @apply animate-spin;
   }
-  
+
   .status-bounce {
     @apply animate-bounce;
   }
-  
+
   /* Skeleton loading animations */
   .skeleton {
     @apply bg-neutral-200 dark:bg-neutral-700 rounded;
     @apply animate-pulse;
   }
-  
+
   .skeleton-text {
     @apply skeleton h-4 mb-2;
   }
-  
+
   .skeleton-title {
     @apply skeleton h-6 mb-3;
   }
-  
+
   .skeleton-button {
     @apply skeleton h-10 w-24;
   }
-  
+
   .skeleton-card {
     @apply skeleton h-32 w-full;
   }
-  
+
   .skeleton-wave {
     @apply relative overflow-hidden;
   }
-  
+
   .skeleton-wave::after {
     @apply absolute inset-0 -translate-x-full;
     content: '';
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
     animation: skeleton-wave 1.5s ease-in-out infinite;
   }
-  
+
   @keyframes skeleton-wave {
     0% {
       transform: translateX(-100%);
@@ -262,7 +267,7 @@
   .btn-primary:hover {
     background-color: #1d4ed8; /* blue-700 */
   }
-  
+
   .btn-secondary {
     @apply bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300;
     @apply dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:active:bg-neutral-600;
@@ -280,7 +285,7 @@
     color: #fafafa; /* neutral-50 */
     background-color: #262626; /* neutral-800 */
   }
-  
+
   .btn-danger {
     @apply bg-error-600 hover:bg-error-700 active:bg-error-800;
     @apply dark:bg-error-500 dark:hover:bg-error-600 dark:active:bg-error-700;
@@ -290,7 +295,7 @@
     @apply dark:focus:ring-offset-neutral-900;
     @apply transform hover:scale-105 active:scale-95;
   }
-  
+
   .btn-ghost {
     @apply bg-transparent hover:bg-neutral-100 active:bg-neutral-200;
     @apply dark:hover:bg-neutral-800 dark:active:bg-neutral-700;
@@ -299,7 +304,7 @@
     @apply focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2;
     @apply dark:focus:ring-offset-neutral-900;
   }
-  
+
   /* Input styles */
   .input-primary {
     @apply w-full px-4 py-3 rounded-xl border border-neutral-300;
@@ -310,23 +315,23 @@
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
     @apply dark:focus:ring-primary-400;
   }
-  
+
   .input-error {
     @apply border-error-500 focus:ring-error-500;
   }
-  
+
   /* Card styles */
   .card {
     @apply bg-white dark:bg-neutral-900 rounded-2xl shadow-sm;
     @apply border border-neutral-200 dark:border-neutral-800;
     @apply transition-all duration-200;
   }
-  
+
   .card-hover {
     @apply hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-700;
     @apply transform hover:scale-[1.02] transition-all duration-200;
   }
-  
+
   /* Navigation styles */
   .nav-link {
     @apply text-neutral-700 dark:text-neutral-300;
@@ -336,7 +341,7 @@
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
     @apply dark:focus:ring-offset-neutral-900;
   }
-  
+
   .nav-link-active {
     @apply text-primary-600 dark:text-primary-400;
     @apply bg-primary-50 dark:bg-primary-950;

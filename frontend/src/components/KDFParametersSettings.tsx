@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
-import type { KDFParams } from '../utils/crypto';
 
 interface KDFParametersSettingsProps {
   className?: string;
@@ -18,25 +17,27 @@ const KDF_PRESETS = {
     time: 1,
     parallelism: 1,
     label: 'Nhanh (ít bảo mật)',
-    description: 'Thích hợp cho thiết bị yếu'
+    description: 'Thích hợp cho thiết bị yếu',
   },
   balanced: {
     memory: 256 * 1024, // 256MB
     time: 3,
     parallelism: 4,
     label: 'Cân bằng (khuyến nghị)',
-    description: 'Cân bằng giữa bảo mật và hiệu suất'
+    description: 'Cân bằng giữa bảo mật và hiệu suất',
   },
   secure: {
     memory: 512 * 1024, // 512MB
     time: 5,
     parallelism: 8,
     label: 'Bảo mật cao',
-    description: 'Bảo mật tối đa, cần thiết bị mạnh'
-  }
+    description: 'Bảo mật tối đa, cần thiết bị mạnh',
+  },
 };
 
-export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ className }) => {
+export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({
+  className,
+}) => {
   const { kdfParams, setKDFParams } = useMasterPasswordStore();
   const [isOpen, setIsOpen] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -82,8 +83,11 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
     setIsOpen(false);
   };
 
-  const handleCustomParamChange = (key: keyof KDFPresetParams, value: number) => {
-    setCustomParams(prev => ({ ...prev, [key]: value }));
+  const handleCustomParamChange = (
+    key: keyof KDFPresetParams,
+    value: number
+  ) => {
+    setCustomParams((prev) => ({ ...prev, [key]: value }));
   };
 
   const applyCustomParams = () => {
@@ -110,11 +114,14 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
       >
         <div>
           <span className="text-sm text-neutral-900 dark:text-neutral-100">
-            {currentPreset === 'custom' ? 'Tùy chỉnh' : KDF_PRESETS[currentPreset as keyof typeof KDF_PRESETS]?.label}
+            {currentPreset === 'custom'
+              ? 'Tùy chỉnh'
+              : KDF_PRESETS[currentPreset as keyof typeof KDF_PRESETS]?.label}
           </span>
           {kdfParams && (
             <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              {formatMemory(kdfParams.memory)} • {kdfParams.time}x • {kdfParams.parallelism} threads
+              {formatMemory(kdfParams.memory)} • {kdfParams.time}x •{' '}
+              {kdfParams.parallelism} threads
             </div>
           )}
         </div>
@@ -126,7 +133,12 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
@@ -148,7 +160,8 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
                   {preset.description}
                 </div>
                 <div className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">
-                  {formatMemory(preset.memory)} • {preset.time}x • {preset.parallelism} threads
+                  {formatMemory(preset.memory)} • {preset.time}x •{' '}
+                  {preset.parallelism} threads
                 </div>
               </button>
             ))}
@@ -185,7 +198,9 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
                 <input
                   type="number"
                   value={customParams.memory}
-                  onChange={(e) => handleCustomParamChange('memory', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleCustomParamChange('memory', parseInt(e.target.value))
+                  }
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                   min="1024"
                   max="2097152"
@@ -203,7 +218,9 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
                 <input
                   type="number"
                   value={customParams.time}
-                  onChange={(e) => handleCustomParamChange('time', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleCustomParamChange('time', parseInt(e.target.value))
+                  }
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                   min="1"
                   max="10"
@@ -217,7 +234,12 @@ export const KDFParametersSettings: React.FC<KDFParametersSettingsProps> = ({ cl
                 <input
                   type="number"
                   value={customParams.parallelism}
-                  onChange={(e) => handleCustomParamChange('parallelism', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleCustomParamChange(
+                      'parallelism',
+                      parseInt(e.target.value)
+                    )
+                  }
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                   min="1"
                   max="16"

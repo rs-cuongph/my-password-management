@@ -34,14 +34,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Custom fallback component
-  if (fallback && ((requireAuth && !isAuthenticated) || (!requireAuth && isAuthenticated))) {
+  if (
+    fallback &&
+    ((requireAuth && !isAuthenticated) || (!requireAuth && isAuthenticated))
+  ) {
     return <>{fallback}</>;
   }
 
   // Route yêu cầu authentication nhưng user chưa login
   if (requireAuth && !isAuthenticated) {
     const loginRedirect = redirectTo || '/login';
-    return <Navigate to={loginRedirect} search={{ redirect: location.pathname }} replace />;
+    return (
+      <Navigate
+        to={loginRedirect}
+        search={{ redirect: location.pathname }}
+        replace
+      />
+    );
   }
 
   // Route dành cho guest (như login, register) nhưng user đã login
@@ -51,10 +60,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check master password status for authenticated users
-  if (requireAuth && isAuthenticated && shouldShowMasterPasswordPage()) {
-    // Don't redirect if already on master password page
-    if (location.pathname !== '/master-password') {
-      return <Navigate to="/master-password" replace />;
+  if (requireAuth && isAuthenticated) {
+    const shouldShowMasterPage = shouldShowMasterPasswordPage();
+
+    // Only redirect to master password page if we should show it AND we're not already there
+    // if (shouldShowMasterPage && location.pathname !== '/master-password') {
+    //   return <Navigate to="/master-password" replace />;
+    // }
+
+    // If we're on master password page but shouldn't be there anymore, redirect to home
+    if (!shouldShowMasterPage && location.pathname === '/master-password') {
+      return <Navigate to="/" replace />;
     }
   }
 
@@ -79,7 +95,7 @@ export const withAuth = <P extends object>(
 
 // Hook để check auth trong components
 export const useRequireAuth = (redirectTo?: string) => {
-  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   useEffect(() => {

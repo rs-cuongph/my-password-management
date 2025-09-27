@@ -1,6 +1,12 @@
 import React from 'react';
 
-export type StatusType = 'idle' | 'saving' | 'syncing' | 'success' | 'error' | 'warning';
+export type StatusType =
+  | 'idle'
+  | 'saving'
+  | 'syncing'
+  | 'success'
+  | 'error'
+  | 'warning';
 
 interface StatusIndicatorProps {
   status: StatusType;
@@ -19,82 +25,122 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   showMessage = true,
   className = '',
   size = 'md',
-  variant = 'detailed'
+  variant = 'detailed',
 }) => {
   const getStatusConfig = () => {
     switch (status) {
       case 'saving':
         return {
           icon: (
-            <svg className="status-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              className="status-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
           ),
           color: 'text-primary-600 dark:text-primary-400',
           bgColor: 'bg-primary-50 dark:bg-primary-950',
           borderColor: 'border-primary-200 dark:border-primary-800',
-          defaultMessage: 'Đang lưu...'
+          defaultMessage: 'Đang lưu...',
         };
       case 'syncing':
         return {
           icon: (
-            <svg className="status-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              className="status-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
           ),
           color: 'text-secondary-600 dark:text-secondary-400',
           bgColor: 'bg-secondary-50 dark:bg-secondary-950',
           borderColor: 'border-secondary-200 dark:border-secondary-800',
-          defaultMessage: 'Đang đồng bộ...'
+          defaultMessage: 'Đang đồng bộ...',
         };
       case 'success':
         return {
           icon: (
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           ),
           color: 'text-success-600 dark:text-success-400',
           bgColor: 'bg-success-50 dark:bg-success-950',
           borderColor: 'border-success-200 dark:border-success-800',
-          defaultMessage: 'Đã lưu thành công'
+          defaultMessage: 'Đã lưu thành công',
         };
       case 'error':
         return {
           icon: (
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           ),
           color: 'text-error-600 dark:text-error-400',
           bgColor: 'bg-error-50 dark:bg-error-950',
           borderColor: 'border-error-200 dark:border-error-800',
-          defaultMessage: 'Lỗi lưu dữ liệu'
+          defaultMessage: 'Lỗi lưu dữ liệu',
         };
       case 'warning':
         return {
           icon: (
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           ),
           color: 'text-warning-600 dark:text-warning-400',
           bgColor: 'bg-warning-50 dark:bg-warning-950',
           borderColor: 'border-warning-200 dark:border-warning-800',
-          defaultMessage: 'Cảnh báo'
+          defaultMessage: 'Cảnh báo',
         };
       case 'idle':
       default:
         return {
           icon: (
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           ),
           color: 'text-neutral-500 dark:text-neutral-400',
           bgColor: 'bg-neutral-50 dark:bg-neutral-900',
           borderColor: 'border-neutral-200 dark:border-neutral-700',
-          defaultMessage: 'Sẵn sàng'
+          defaultMessage: 'Sẵn sàng',
         };
     }
   };
@@ -105,20 +151,20 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         return {
           icon: 'w-3 h-3',
           text: 'text-xs',
-          padding: 'px-2 py-1'
+          padding: 'px-2 py-1',
         };
       case 'lg':
         return {
           icon: 'w-6 h-6',
           text: 'text-base',
-          padding: 'px-4 py-3'
+          padding: 'px-4 py-3',
         };
       case 'md':
       default:
         return {
           icon: 'w-4 h-4',
           text: 'text-sm',
-          padding: 'px-3 py-2'
+          padding: 'px-3 py-2',
         };
     }
   };
@@ -146,16 +192,14 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
   if (variant === 'badge') {
     return (
-      <div className={`
+      <div
+        className={`
         inline-flex items-center gap-2 ${sizeClasses.padding} rounded-full border
         ${config.bgColor} ${config.borderColor} ${config.color}
         ${className}
-      `}>
-        {showIcon && (
-          <div className={sizeClasses.icon}>
-            {config.icon}
-          </div>
-        )}
+      `}
+      >
+        {showIcon && <div className={sizeClasses.icon}>{config.icon}</div>}
         {showMessage && (
           <span className={`${sizeClasses.text} font-medium`}>
             {displayMessage}
@@ -167,12 +211,14 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
   // Default 'detailed' variant
   return (
-    <div className={`
+    <div
+      className={`
       flex items-center gap-3 ${sizeClasses.padding} rounded-xl border
       ${config.bgColor} ${config.borderColor}
       transition-all duration-200
       ${className}
-    `}>
+    `}
+    >
       {showIcon && (
         <div className={`${sizeClasses.icon} ${config.color} flex-shrink-0`}>
           {config.icon}
@@ -277,7 +323,7 @@ function formatTimeAgo(date: Date): string {
   if (diffMins < 60) return `${diffMins} phút trước`;
   if (diffHours < 24) return `${diffHours} giờ trước`;
   if (diffDays < 7) return `${diffDays} ngày trước`;
-  
+
   return date.toLocaleDateString('vi-VN');
 }
 

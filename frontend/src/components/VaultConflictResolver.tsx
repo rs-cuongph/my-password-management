@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VaultConflict } from '../services/vaultService';
+import type { VaultConflict } from '../services/vaultService';
 
 interface VaultConflictResolverProps {
   conflict: VaultConflict;
@@ -14,7 +14,9 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
   onCancel,
   isResolving = false,
 }) => {
-  const [selectedChoice, setSelectedChoice] = useState<'server' | 'local' | null>(null);
+  const [selectedChoice, setSelectedChoice] = useState<
+    'server' | 'local' | null
+  >(null);
 
   const handleResolve = async () => {
     if (!selectedChoice) return;
@@ -43,15 +45,15 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
   };
 
   const getDataSummary = (isLocal: boolean) => {
-    const data = isLocal ? conflict.localData : conflict.serverData;
-
     if (isLocal) {
+      const data = conflict.localData;
       return {
         entries: data.entries?.length || 0,
         boards: data.boards?.length || 0,
         lastModified: data.metadata?.lastSyncAt,
       };
     } else {
+      const data = conflict.serverData;
       return {
         entries: 'N/A', // Server data structure might be different
         boards: 'N/A',
@@ -61,7 +63,7 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
   };
 
   const localSummary = getDataSummary(true);
-  const serverSummary = getDataSummary(false);
+  // const serverSummary = getDataSummary(false);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -78,8 +80,18 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
                 className="text-gray-400 hover:text-gray-600"
                 disabled={isResolving}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -89,8 +101,16 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
@@ -106,16 +126,19 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
 
           {/* Conflict Details */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Chọn phiên bản để giữ lại:</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Chọn phiên bản để giữ lại:
+            </h3>
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Local Version */}
               <div
                 className={`
                   border-2 rounded-lg p-4 cursor-pointer transition-all
-                  ${selectedChoice === 'local'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ${
+                    selectedChoice === 'local'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
                 onClick={() => setSelectedChoice('local')}
@@ -144,7 +167,9 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Sửa đổi lần cuối:</span>
                     <span className="font-medium">
-                      {localSummary.lastModified ? formatDate(localSummary.lastModified) : 'N/A'}
+                      {localSummary.lastModified
+                        ? formatDate(localSummary.lastModified)
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
@@ -163,9 +188,10 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
               <div
                 className={`
                   border-2 rounded-lg p-4 cursor-pointer transition-all
-                  ${selectedChoice === 'server'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ${
+                    selectedChoice === 'server'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
                 onClick={() => setSelectedChoice('server')}
@@ -185,7 +211,9 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Version:</span>
-                    <span className="font-medium">{conflict.serverData.version}</span>
+                    <span className="font-medium">
+                      {conflict.serverData.version}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Checksum:</span>
@@ -215,11 +243,22 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
 
           {/* Detailed Explanation */}
           <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Gợi Ý Lựa Chọn</h4>
+            <h4 className="font-medium text-blue-900 mb-2">
+              💡 Gợi Ý Lựa Chọn
+            </h4>
             <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>Chọn Cục Bộ</strong> nếu: Bạn vừa thực hiện thay đổi quan trọng trên thiết bị này.</p>
-              <p><strong>Chọn Server</strong> nếu: Bạn tin rằng phiên bản trên server mới hơn và chính xác hơn.</p>
-              <p><strong>Lưu ý:</strong> Lựa chọn này không thể hoàn tác. Hãy chắc chắn trước khi quyết định.</p>
+              <p>
+                <strong>Chọn Cục Bộ</strong> nếu: Bạn vừa thực hiện thay đổi
+                quan trọng trên thiết bị này.
+              </p>
+              <p>
+                <strong>Chọn Server</strong> nếu: Bạn tin rằng phiên bản trên
+                server mới hơn và chính xác hơn.
+              </p>
+              <p>
+                <strong>Lưu ý:</strong> Lựa chọn này không thể hoàn tác. Hãy
+                chắc chắn trước khi quyết định.
+              </p>
             </div>
           </div>
 
@@ -231,16 +270,27 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
               className={`
                 flex-1 px-6 py-3 rounded-lg font-medium transition-colors
                 flex items-center justify-center gap-2
-                ${selectedChoice && !isResolving
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ${
+                  selectedChoice && !isResolving
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }
               `}
             >
               {isResolving ? (
                 <>
-                  <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-5 h-5 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   Đang giải quyết...
                 </>
@@ -272,18 +322,24 @@ export const VaultConflictResolver: React.FC<VaultConflictResolverProps> = ({
           </div>
 
           {/* Technical Details (for debugging) */}
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <div className="mt-6 pt-6 border-t border-gray-200">
               <details className="text-xs text-gray-500">
-                <summary className="cursor-pointer font-medium">Technical Details (Dev Mode)</summary>
+                <summary className="cursor-pointer font-medium">
+                  Technical Details (Dev Mode)
+                </summary>
                 <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
-                  {JSON.stringify({
-                    conflictType: conflict.conflictType,
-                    serverVersion: conflict.serverData.version,
-                    serverChecksum: conflict.serverData.checksum,
-                    localEntries: conflict.localData.entries?.length,
-                    localBoards: conflict.localData.boards?.length,
-                  }, null, 2)}
+                  {JSON.stringify(
+                    {
+                      conflictType: conflict.conflictType,
+                      serverVersion: conflict.serverData.version,
+                      serverChecksum: conflict.serverData.checksum,
+                      localEntries: conflict.localData.entries?.length,
+                      localBoards: conflict.localData.boards?.length,
+                    },
+                    null,
+                    2
+                  )}
                 </pre>
               </details>
             </div>

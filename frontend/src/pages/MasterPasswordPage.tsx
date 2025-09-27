@@ -1,19 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
+import { useAuthStore } from '../stores/authStore';
 import { deriveMasterKey } from '../utils/crypto';
 import { KDFProgressIndicator } from '../components/KDFProgressIndicator';
+import { useI18n } from '../hooks/useI18n';
+
+// Utility function to get kdfSalt from user profile
+const getKdfSalt = (user: any): string | null => {
+  // Only get salt from user profile (from server)
+  return user?.kdfSalt || null;
+};
 
 const MasterPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const { setMasterKey, setKDFParams, setIsUnlocked } = useMasterPasswordStore();
-  
+  const { setMasterKey, setKDFParams, setIsUnlocked } =
+    useMasterPasswordStore();
+  const { user, token } = useAuthStore();
+  const { t } = useI18n();
+
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [kdfProgress, setKdfProgress] = useState(0);
-  
+
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<number | null>(null);
 
@@ -24,19 +35,37 @@ const MasterPasswordPage: React.FC = () => {
     }
   }, []);
 
+  // Check authentication status on mount
+  useEffect(() => {
+    // If user is not authenticated, redirect to login
+    if (!token || !user) {
+      navigate({ to: '/login' });
+      return;
+    }
+
+    // Check if kdfSalt exists in any available source
+    const kdfSalt = getKdfSalt(user);
+    if (!kdfSalt) {
+      setError('Không tìm thấy salt từ server. Vui lòng đăng nhập lại.');
+    }
+  }, [navigate, token, user]);
+
   // Auto-lock functionality
   useEffect(() => {
     const resetTimeout = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       // Auto-lock after 5 minutes of inactivity
-      timeoutRef.current = setTimeout(() => {
-        setIsUnlocked(false);
-        setPassword('');
-        navigate({ to: '/master-password' });
-      }, 5 * 60 * 1000);
+      timeoutRef.current = setTimeout(
+        () => {
+          setIsUnlocked(false);
+          setPassword('');
+          navigate({ to: '/master-password' });
+        },
+        5 * 60 * 1000
+      );
     };
 
     const handleActivity = () => {
@@ -44,15 +73,21 @@ const MasterPasswordPage: React.FC = () => {
     };
 
     // Listen for user activity
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(event => {
+    const events = [
+      'mousedown',
+      'mousemove',
+      'keypress',
+      'scroll',
+      'touchstart',
+    ];
+    events.forEach((event) => {
       document.addEventListener(event, handleActivity, true);
     });
 
     resetTimeout();
 
     return () => {
-      events.forEach(event => {
+      events.forEach((event) => {
         document.removeEventListener(event, handleActivity, true);
       });
       if (timeoutRef.current) {
@@ -63,16 +98,29 @@ const MasterPasswordPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password.trim()) {
-      setError('Vui lòng nhập master password');
+      setError(t('masterPassword.errors.required'));
       return;
     }
 
-    // Get kdfSalt from sessionStorage
-    const kdfSalt = sessionStorage.getItem('kdfSalt');
+    // Get kdfSalt from multiple sources with fallback priority
+    const kdfSalt = getKdfSalt(user);
+
     if (!kdfSalt) {
-      setError('Không tìm thấy salt từ server. Vui lòng đăng nhập lại.');
+      // Check if user is authenticated
+      if (!token || !user) {
+        setError(t('masterPassword.errors.notLoggedIn'));
+        return;
+      }
+
+      setError(t('masterPassword.errors.saltNotFound'));
+      return;
+    }
+
+    // Validate kdfSalt format (should be hex string)
+    if (!/^[0-9a-fA-F]+$/.test(kdfSalt)) {
+      setError(t('masterPassword.errors.invalidSalt'));
       return;
     }
 
@@ -88,20 +136,51 @@ const MasterPasswordPage: React.FC = () => {
         (progress) => setKdfProgress(progress)
       );
 
-      // Store master key and KDF parameters
-      setMasterKey(masterKey);
+      // Store master key and KDF parameters in correct order
       setKDFParams(kdfParams);
+      setMasterKey(masterKey);
+
+      // Initialize and unlock the store
+      const { initialize, updateActivity } = useMasterPasswordStore.getState();
+      initialize();
       setIsUnlocked(true);
+      updateActivity();
 
-      // Clear password from memory and kdfSalt from sessionStorage
+      // Clear password from memory
       setPassword('');
-      sessionStorage.removeItem('kdfSalt');
 
-      // Navigate to home page
-      navigate({ to: '/' });
+      // Navigate to home page with a small delay to ensure all state updates are applied
+      setTimeout(() => {
+        // Double-check that we're properly unlocked before navigating
+        const {
+          isUnlocked,
+          isInitialized,
+          masterKey: storedKey,
+        } = useMasterPasswordStore.getState();
+        console.log('Pre-navigation state:', {
+          isUnlocked,
+          isInitialized,
+          hasKey: !!storedKey,
+        });
+
+        if (isUnlocked && isInitialized && storedKey) {
+          navigate({ to: '/' });
+        } else {
+          console.error('State not properly set after unlock:', {
+            isUnlocked,
+            isInitialized,
+            hasKey: !!storedKey,
+          });
+          setError(t('masterPassword.errors.unlockFailed'));
+        }
+      }, 150);
     } catch (err) {
       console.error('Master key derivation failed:', err);
-      setError(err instanceof Error ? err.message : 'Không thể tạo master key. Vui lòng thử lại.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('masterPassword.errors.derivationFailed')
+      );
     } finally {
       setIsLoading(false);
       setKdfProgress(0);
@@ -137,10 +216,10 @@ const MasterPasswordPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Master Password
+            {t('masterPassword.title')}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Nhập master password để truy cập ứng dụng
+            {t('masterPassword.description')}
           </p>
         </div>
 
@@ -159,7 +238,7 @@ const MasterPasswordPage: React.FC = () => {
                   autoComplete="current-password"
                   required
                   className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-12 pr-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Nhập master password"
+                  placeholder={t('masterPassword.placeholder')}
                   value={password}
                   onChange={handlePasswordChange}
                   disabled={isLoading}
@@ -241,7 +320,27 @@ const MasterPasswordPage: React.FC = () => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                    <h3 className="text-sm font-medium text-red-800">
+                      {error}
+                    </h3>
+                    {error.includes('salt') && (
+                      <div className="mt-2">
+                        <p className="text-sm text-red-700">
+                          Để khắc phục lỗi này:
+                        </p>
+                        <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                          <li>Đảm bảo bạn đã đăng nhập thành công</li>
+                          <li>
+                            Không làm mới trang trước khi nhập master password
+                          </li>
+                          <li>
+                            Hệ thống đã thử tìm salt từ: sessionStorage → user
+                            profile → localStorage
+                          </li>
+                          <li>Thử đăng nhập lại nếu vấn đề vẫn tiếp tục</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -251,7 +350,7 @@ const MasterPasswordPage: React.FC = () => {
               <div className="space-y-3">
                 <KDFProgressIndicator progress={kdfProgress} />
                 <div className="text-center text-sm text-gray-600">
-                  Đang tạo master key... Vui lòng đợi
+                  {t('masterPassword.progress.deriving')}
                 </div>
               </div>
             )}
@@ -285,10 +384,10 @@ const MasterPasswordPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Đang xử lý...
+                  {t('masterPassword.processing')}
                 </div>
               ) : (
-                'Mở khóa'
+                t('masterPassword.unlock')
               )}
             </button>
           </div>
@@ -300,16 +399,16 @@ const MasterPasswordPage: React.FC = () => {
               className="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
               disabled={isLoading}
             >
-              Quay lại đăng nhập
+              {t('masterPassword.backToLogin')}
             </button>
           </div>
         </form>
 
         <div className="mt-8 text-center">
           <div className="text-xs text-gray-500 space-y-1">
-            <p>🔒 Master password được mã hóa cục bộ</p>
-            <p>⏱️ Tự động khóa sau 5 phút không hoạt động</p>
-            <p>🔑 Không lưu trữ master password trên server</p>
+            <p>{t('masterPassword.features.encrypted')}</p>
+            <p>{t('masterPassword.features.autoLock')}</p>
+            <p>{t('masterPassword.features.noServer')}</p>
           </div>
         </div>
       </div>

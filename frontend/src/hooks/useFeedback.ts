@@ -8,45 +8,51 @@ export const useSaveState = () => {
   const [saveError, setSaveError] = useState<string>('');
   const { addToast } = useToast();
 
-  const save = useCallback(async (saveFunction: () => Promise<void>, options?: {
-    successMessage?: string;
-    errorMessage?: string;
-    showProgress?: boolean;
-  }) => {
-    const {
-      successMessage = 'Đã lưu thành công',
-      errorMessage = 'Lỗi khi lưu dữ liệu',
-      showProgress = true
-    } = options || {};
+  const save = useCallback(
+    async (
+      saveFunction: () => Promise<void>,
+      options?: {
+        successMessage?: string;
+        errorMessage?: string;
+        showProgress?: boolean;
+      }
+    ) => {
+      const {
+        successMessage = 'Đã lưu thành công',
+        errorMessage = 'Lỗi khi lưu dữ liệu',
+        showProgress = true,
+      } = options || {};
 
-    setIsSaving(true);
-    setSaveError('');
+      setIsSaving(true);
+      setSaveError('');
 
-    try {
-      await saveFunction();
-      setLastSaved(new Date());
-      addToast({
-        message: successMessage,
-        type: 'success',
-        duration: 3000,
-        showProgress
-      });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : errorMessage;
-      setSaveError(errorMsg);
-      addToast({
-        message: `${errorMessage}: ${errorMsg}`,
-        type: 'error',
-        duration: 5000,
-        action: {
-          label: 'Thử lại',
-          onClick: () => save(saveFunction, options)
-        }
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [addToast]);
+      try {
+        await saveFunction();
+        setLastSaved(new Date());
+        addToast({
+          message: successMessage,
+          type: 'success',
+          duration: 3000,
+          showProgress,
+        });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : errorMessage;
+        setSaveError(errorMsg);
+        addToast({
+          message: `${errorMessage}: ${errorMsg}`,
+          type: 'error',
+          duration: 5000,
+          action: {
+            label: 'Thử lại',
+            onClick: () => save(saveFunction, options),
+          },
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [addToast]
+  );
 
   const resetSaveState = useCallback(() => {
     setIsSaving(false);
@@ -59,7 +65,7 @@ export const useSaveState = () => {
     lastSaved,
     saveError,
     save,
-    resetSaveState
+    resetSaveState,
   };
 };
 
@@ -70,59 +76,62 @@ export const useAsyncOperation = <T = any>() => {
   const [data, setData] = useState<T | null>(null);
   const { addToast } = useToast();
 
-  const execute = useCallback(async (
-    operation: () => Promise<T>,
-    options?: {
-      successMessage?: string;
-      errorMessage?: string;
-      showSuccessToast?: boolean;
-      showErrorToast?: boolean;
-    }
-  ) => {
-    const {
-      successMessage = 'Thao tác thành công',
-      errorMessage = 'Đã xảy ra lỗi',
-      showSuccessToast = false,
-      showErrorToast = true
-    } = options || {};
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await operation();
-      setData(result);
-      
-      if (showSuccessToast) {
-        addToast({
-          message: successMessage,
-          type: 'success',
-          duration: 3000
-        });
+  const execute = useCallback(
+    async (
+      operation: () => Promise<T>,
+      options?: {
+        successMessage?: string;
+        errorMessage?: string;
+        showSuccessToast?: boolean;
+        showErrorToast?: boolean;
       }
-      
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(errorMessage);
-      setError(error);
-      
-      if (showErrorToast) {
-        addToast({
-          message: `${errorMessage}: ${error.message}`,
-          type: 'error',
-          duration: 5000,
-          action: {
-            label: 'Thử lại',
-            onClick: () => execute(operation, options)
-          }
-        });
+    ) => {
+      const {
+        successMessage = 'Thao tác thành công',
+        errorMessage = 'Đã xảy ra lỗi',
+        showSuccessToast = false,
+        showErrorToast = true,
+      } = options || {};
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await operation();
+        setData(result);
+
+        if (showSuccessToast) {
+          addToast({
+            message: successMessage,
+            type: 'success',
+            duration: 3000,
+          });
+        }
+
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(errorMessage);
+        setError(error);
+
+        if (showErrorToast) {
+          addToast({
+            message: `${errorMessage}: ${error.message}`,
+            type: 'error',
+            duration: 5000,
+            action: {
+              label: 'Thử lại',
+              onClick: () => execute(operation, options),
+            },
+          });
+        }
+
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addToast]);
+    },
+    [addToast]
+  );
 
   const reset = useCallback(() => {
     setIsLoading(false);
@@ -135,7 +144,7 @@ export const useAsyncOperation = <T = any>() => {
     error,
     data,
     execute,
-    reset
+    reset,
   };
 };
 
@@ -144,27 +153,30 @@ export const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { addToast } = useToast();
 
-  const updateOnlineStatus = useCallback((online: boolean) => {
-    setIsOnline(online);
-    
-    if (online) {
-      addToast({
-        message: '🌐 Đã kết nối lại internet',
-        type: 'success',
-        duration: 3000
-      });
-    } else {
-      addToast({
-        message: '⚠️ Mất kết nối internet',
-        type: 'warning',
-        persistent: true
-      });
-    }
-  }, [addToast]);
+  const updateOnlineStatus = useCallback(
+    (online: boolean) => {
+      setIsOnline(online);
+
+      if (online) {
+        addToast({
+          message: '🌐 Đã kết nối lại internet',
+          type: 'success',
+          duration: 3000,
+        });
+      } else {
+        addToast({
+          message: '⚠️ Mất kết nối internet',
+          type: 'warning',
+          persistent: true,
+        });
+      }
+    },
+    [addToast]
+  );
 
   return {
     isOnline,
-    updateOnlineStatus
+    updateOnlineStatus,
   };
 };
 
@@ -172,47 +184,50 @@ export const useNetworkStatus = () => {
 export const useCopyFeedback = () => {
   const { addToast } = useToast();
 
-  const copyWithFeedback = useCallback(async (
-    text: string,
-    options?: {
-      type?: string;
-      successMessage?: string;
-      errorMessage?: string;
-      showCountdown?: boolean;
-      clearTimeout?: number;
-    }
-  ) => {
-    const {
-      type = 'text',
-      successMessage = `${type} đã được sao chép`,
-      errorMessage = `Lỗi sao chép ${type}`,
-      showCountdown = true,
-      clearTimeout = 15
-    } = options || {};
+  const copyWithFeedback = useCallback(
+    async (
+      text: string,
+      options?: {
+        type?: string;
+        successMessage?: string;
+        errorMessage?: string;
+        showCountdown?: boolean;
+        clearTimeout?: number;
+      }
+    ) => {
+      const {
+        type = 'text',
+        successMessage = `${type} đã được sao chép`,
+        errorMessage = `Lỗi sao chép ${type}`,
+        showCountdown = true,
+        clearTimeout = 15,
+      } = options || {};
 
-    try {
-      await navigator.clipboard.writeText(text);
-      
-      addToast({
-        message: successMessage,
-        type: 'success',
-        duration: clearTimeout > 0 ? (clearTimeout + 1) * 1000 : 3000,
-        countdown: clearTimeout,
-        showCountdown: showCountdown && clearTimeout > 0,
-        showProgress: clearTimeout > 0 && showCountdown
-      });
-      
-      return { success: true };
-    } catch (error) {
-      addToast({
-        message: `${errorMessage}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'error',
-        duration: 5000
-      });
-      
-      return { success: false, error };
-    }
-  }, [addToast]);
+      try {
+        await navigator.clipboard.writeText(text);
+
+        addToast({
+          message: successMessage,
+          type: 'success',
+          duration: clearTimeout > 0 ? (clearTimeout + 1) * 1000 : 3000,
+          countdown: clearTimeout,
+          showCountdown: showCountdown && clearTimeout > 0,
+          showProgress: clearTimeout > 0 && showCountdown,
+        });
+
+        return { success: true };
+      } catch (error) {
+        addToast({
+          message: `${errorMessage}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'error',
+          duration: 5000,
+        });
+
+        return { success: false, error };
+      }
+    },
+    [addToast]
+  );
 
   return { copyWithFeedback };
 };
@@ -221,34 +236,43 @@ export const useCopyFeedback = () => {
 export const useFormFeedback = () => {
   const { addToast } = useToast();
 
-  const showValidationError = useCallback((message: string) => {
-    addToast({
-      message: `❌ ${message}`,
-      type: 'error',
-      duration: 4000
-    });
-  }, [addToast]);
+  const showValidationError = useCallback(
+    (message: string) => {
+      addToast({
+        message: `❌ ${message}`,
+        type: 'error',
+        duration: 4000,
+      });
+    },
+    [addToast]
+  );
 
-  const showValidationSuccess = useCallback((message: string) => {
-    addToast({
-      message: `✅ ${message}`,
-      type: 'success',
-      duration: 3000
-    });
-  }, [addToast]);
+  const showValidationSuccess = useCallback(
+    (message: string) => {
+      addToast({
+        message: `✅ ${message}`,
+        type: 'success',
+        duration: 3000,
+      });
+    },
+    [addToast]
+  );
 
-  const showFieldError = useCallback((field: string, error: string) => {
-    addToast({
-      message: `${field}: ${error}`,
-      type: 'warning',
-      duration: 4000
-    });
-  }, [addToast]);
+  const showFieldError = useCallback(
+    (field: string, error: string) => {
+      addToast({
+        message: `${field}: ${error}`,
+        type: 'warning',
+        duration: 4000,
+      });
+    },
+    [addToast]
+  );
 
   return {
     showValidationError,
     showValidationSuccess,
-    showFieldError
+    showFieldError,
   };
 };
 
@@ -256,38 +280,40 @@ export const useFormFeedback = () => {
 export const useBulkOperationFeedback = () => {
   const { addToast } = useToast();
 
-  const showBulkProgress = useCallback((current: number, total: number, operation: string) => {
-    const progress = Math.round((current / total) * 100);
-    
-    return addToast({
-      message: `${operation}: ${current}/${total} (${progress}%)`,
-      type: 'info',
-      duration: 0, // Keep until manually removed
-      showProgress: true,
-      persistent: true
-    });
-  }, [addToast]);
+  const showBulkProgress = useCallback(
+    (current: number, total: number, operation: string) => {
+      const progress = Math.round((current / total) * 100);
 
-  const showBulkComplete = useCallback((
-    total: number, 
-    successful: number, 
-    failed: number, 
-    operation: string
-  ) => {
-    const message = failed > 0
-      ? `${operation} hoàn thành: ${successful}/${total} thành công, ${failed} thất bại`
-      : `${operation} hoàn thành: ${successful}/${total} thành công`;
-    
-    addToast({
-      message,
-      type: failed > 0 ? 'warning' : 'success',
-      duration: 5000
-    });
-  }, [addToast]);
+      return addToast({
+        message: `${operation}: ${current}/${total} (${progress}%)`,
+        type: 'info',
+        duration: 0, // Keep until manually removed
+        showProgress: true,
+        persistent: true,
+      });
+    },
+    [addToast]
+  );
+
+  const showBulkComplete = useCallback(
+    (total: number, successful: number, failed: number, operation: string) => {
+      const message =
+        failed > 0
+          ? `${operation} hoàn thành: ${successful}/${total} thành công, ${failed} thất bại`
+          : `${operation} hoàn thành: ${successful}/${total} thành công`;
+
+      addToast({
+        message,
+        type: failed > 0 ? 'warning' : 'success',
+        duration: 5000,
+      });
+    },
+    [addToast]
+  );
 
   return {
     showBulkProgress,
-    showBulkComplete
+    showBulkComplete,
   };
 };
 
@@ -297,5 +323,5 @@ export default {
   useNetworkStatus,
   useCopyFeedback,
   useFormFeedback,
-  useBulkOperationFeedback
+  useBulkOperationFeedback,
 };

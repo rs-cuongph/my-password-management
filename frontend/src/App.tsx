@@ -38,9 +38,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <RouterProvider router={router} />
-        {import.meta.env.DEV && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </ToastProvider>
     </QueryClientProvider>
   );

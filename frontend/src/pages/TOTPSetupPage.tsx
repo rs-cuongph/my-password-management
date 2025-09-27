@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
 import * as v from 'valibot';
-import { TOTPVerificationSchema, type TOTPVerificationInput } from '../schemas/auth';
+import {
+  TOTPVerificationSchema,
+  type TOTPVerificationInput,
+} from '../schemas/auth';
 import { useSetupTOTP, useVerifyTOTP } from '../services/authService';
 
 interface TOTPSetupPageProps {
@@ -12,10 +14,11 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
   const [step, setStep] = useState<'setup' | 'verify'>('setup');
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const [otpauthUri, setOtpauthUri] = useState<string>('');
-  const [verificationData, setVerificationData] = useState<TOTPVerificationInput>({
-    tempToken,
-    totpCode: '',
-  });
+  const [verificationData, setVerificationData] =
+    useState<TOTPVerificationInput>({
+      tempToken,
+      totpCode: '',
+    });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const setupTOTPMutation = useSetupTOTP();
@@ -34,14 +37,18 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
           if (error?.response?.data?.message) {
             setErrors({ general: error.response.data.message });
           } else {
-            setErrors({ general: 'Không thể thiết lập xác thực 2FA. Vui lòng thử lại.' });
+            setErrors({
+              general: 'Không thể thiết lập xác thực 2FA. Vui lòng thử lại.',
+            });
           }
         },
       }
     );
   }, [tempToken]);
 
-  const handleVerificationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVerificationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setVerificationData((prev) => ({ ...prev, [name]: value }));
 
@@ -118,9 +125,25 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
           <div className="bg-white rounded-lg shadow-md p-6">
             {setupTOTPMutation.isPending ? (
               <div className="flex justify-center items-center py-8">
-                <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin h-8 w-8 text-indigo-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
               </div>
             ) : qrCodeData ? (
@@ -162,7 +185,10 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
                     Hướng dẫn:
                   </h3>
                   <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                    <li>Tải ứng dụng xác thực như Google Authenticator, Authy, hoặc Microsoft Authenticator</li>
+                    <li>
+                      Tải ứng dụng xác thực như Google Authenticator, Authy,
+                      hoặc Microsoft Authenticator
+                    </li>
                     <li>Quét mã QR hoặc nhập mã thủ công</li>
                     <li>Nhấn "Tiếp tục" để xác thực mã</li>
                   </ol>
@@ -178,7 +204,9 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-red-600">Không thể tạo mã QR. Vui lòng thử lại.</p>
+                <p className="text-red-600">
+                  Không thể tạo mã QR. Vui lòng thử lại.
+                </p>
                 <button
                   onClick={() => window.location.reload()}
                   className="mt-4 text-indigo-600 hover:text-indigo-500 text-sm"
@@ -214,7 +242,10 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
 
         <form className="mt-8 space-y-6" onSubmit={handleVerificationSubmit}>
           <div>
-            <label htmlFor="totpCode" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="totpCode"
+              className="block text-sm font-medium text-gray-700"
+            >
               Mã xác thực
             </label>
             <input
@@ -251,9 +282,25 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
             >
               {verifyTOTPMutation.isPending ? (
                 <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Đang xác thực...
                 </div>

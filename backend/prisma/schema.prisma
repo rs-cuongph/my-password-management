@@ -15,11 +15,9 @@ datasource db {
 
 model User {
   id         Int      @id @default(autoincrement())
-  username   String   @unique
   email      String   @unique
   password   String // Hashed password for server authentication
   kdfSalt    String // Random salt for client-side key derivation
-  name       String?
   need2fa    Boolean  @default(false)
   totpSecret String? // Encrypted TOTP secret (AES-GCM encrypted)
   isActive   Boolean  @default(true)

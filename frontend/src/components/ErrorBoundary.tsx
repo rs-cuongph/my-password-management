@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -9,17 +10,24 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  fallback?: (error: Error, errorInfo: ErrorInfo, retry: () => void) => ReactNode;
+  fallback?: (
+    error: Error,
+    errorInfo: ErrorInfo,
+    retry: () => void
+  ) => ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
   isolate?: boolean; // If true, only catch errors from direct children
   level?: 'page' | 'component' | 'critical'; // Different error levels
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
-      hasError: false
+      hasError: false,
     };
   }
 
@@ -27,17 +35,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return {
       hasError: true,
       error,
-      errorId: Math.random().toString(36).substr(2, 9)
+      errorId: Math.random().toString(36).substr(2, 9),
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo,
-      errorId: Math.random().toString(36).substr(2, 9)
+      errorId: Math.random().toString(36).substr(2, 9),
     });
 
     // Call custom error handler
@@ -56,7 +64,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       url: window.location.href,
-      errorId: this.state.errorId
+      errorId: this.state.errorId,
     };
 
     // For now, just log to console
@@ -68,14 +76,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       hasError: false,
       error: undefined,
       errorInfo: undefined,
-      errorId: undefined
+      errorId: undefined,
     });
   };
 
   render() {
     if (this.state.hasError && this.state.error && this.state.errorInfo) {
       if (this.props.fallback) {
-        return this.props.fallback(this.state.error, this.state.errorInfo, this.retry);
+        return this.props.fallback(
+          this.state.error,
+          this.state.errorInfo,
+          this.retry
+        );
       }
 
       return (
@@ -107,19 +119,20 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
   errorInfo,
   retry,
   level,
-  errorId
+  errorId,
 }) => {
   const getErrorConfig = () => {
     switch (level) {
       case 'critical':
         return {
           title: 'Lỗi nghiêm trọng',
-          message: 'Ứng dụng đã gặp lỗi nghiêm trọng và cần được khởi động lại.',
+          message:
+            'Ứng dụng đã gặp lỗi nghiêm trọng và cần được khởi động lại.',
           icon: '🚨',
           color: 'error',
           showDetails: true,
           showRetry: false,
-          showReload: true
+          showReload: true,
         };
       case 'page':
         return {
@@ -129,7 +142,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
           color: 'error',
           showDetails: false,
           showRetry: true,
-          showReload: true
+          showReload: true,
         };
       case 'component':
       default:
@@ -140,7 +153,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
           color: 'warning',
           showDetails: false,
           showRetry: true,
-          showReload: false
+          showReload: false,
         };
     }
   };
@@ -180,7 +193,7 @@ User Agent: ${navigator.userAgent}
           bg: 'bg-error-50 dark:bg-error-950',
           border: 'border-error-200 dark:border-error-800',
           text: 'text-error-800 dark:text-error-200',
-          button: 'bg-error-600 hover:bg-error-700 text-white'
+          button: 'bg-error-600 hover:bg-error-700 text-white',
         };
       case 'warning':
       default:
@@ -188,7 +201,7 @@ User Agent: ${navigator.userAgent}
           bg: 'bg-warning-50 dark:bg-warning-950',
           border: 'border-warning-200 dark:border-warning-800',
           text: 'text-warning-800 dark:text-warning-200',
-          button: 'bg-warning-600 hover:bg-warning-700 text-white'
+          button: 'bg-warning-600 hover:bg-warning-700 text-white',
         };
     }
   };
@@ -196,22 +209,20 @@ User Agent: ${navigator.userAgent}
   const colors = getColorClasses();
 
   return (
-    <div className={`
+    <div
+      className={`
       max-w-2xl mx-auto p-6 border rounded-2xl ${colors.bg} ${colors.border}
       ${level === 'page' ? 'min-h-[400px] flex flex-col justify-center' : ''}
-    `}>
+    `}
+    >
       <div className="text-center mb-6">
         <div className="text-4xl mb-4">{config.icon}</div>
         <h2 className={`text-2xl font-bold mb-2 ${colors.text}`}>
           {config.title}
         </h2>
-        <p className={`${colors.text} opacity-90`}>
-          {config.message}
-        </p>
+        <p className={`${colors.text} opacity-90`}>{config.message}</p>
         {errorId && (
-          <p className="text-sm text-neutral-500 mt-2">
-            Mã lỗi: {errorId}
-          </p>
+          <p className="text-sm text-neutral-500 mt-2">Mã lỗi: {errorId}</p>
         )}
       </div>
 
@@ -252,16 +263,17 @@ User Agent: ${navigator.userAgent}
               onClick={copyErrorToClipboard}
               className={`
                 px-3 py-1 text-sm rounded-lg transition-all
-                ${isCopied 
-                  ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200' 
-                  : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+                ${
+                  isCopied
+                    ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
+                    : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                 }
               `}
             >
               {isCopied ? 'Đã sao chép!' : 'Sao chép lỗi'}
             </button>
           </div>
-          
+
           <div className="space-y-4 text-sm">
             <div>
               <strong className="block text-neutral-800 dark:text-neutral-200 mb-1">
@@ -271,7 +283,7 @@ User Agent: ${navigator.userAgent}
                 {error.message}
               </code>
             </div>
-            
+
             {error.stack && (
               <div>
                 <strong className="block text-neutral-800 dark:text-neutral-200 mb-1">
@@ -282,7 +294,7 @@ User Agent: ${navigator.userAgent}
                 </code>
               </div>
             )}
-            
+
             {errorInfo.componentStack && (
               <div>
                 <strong className="block text-neutral-800 dark:text-neutral-200 mb-1">
@@ -362,7 +374,11 @@ export const withErrorBoundary = <P extends object>(
   options?: {
     level?: 'page' | 'component' | 'critical';
     onError?: (error: Error, errorInfo: ErrorInfo) => void;
-    fallback?: (error: Error, errorInfo: ErrorInfo, retry: () => void) => ReactNode;
+    fallback?: (
+      error: Error,
+      errorInfo: ErrorInfo,
+      retry: () => void
+    ) => ReactNode;
   }
 ) => {
   const WrappedComponent = (props: P) => {

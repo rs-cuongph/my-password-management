@@ -2,7 +2,14 @@ import { useEffect } from 'react';
 import { useAppStore } from '../stores/appStore';
 
 export const useTheme = () => {
-  const { theme, initializeTheme, setTheme, toggleTheme, getResolvedTheme, isInitialized } = useAppStore();
+  const {
+    theme,
+    initializeTheme,
+    setTheme,
+    toggleTheme,
+    getResolvedTheme,
+    isInitialized,
+  } = useAppStore();
 
   useEffect(() => {
     if (!isInitialized) {

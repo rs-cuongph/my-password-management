@@ -1,0 +1,117 @@
+{
+  "app": {
+    "name": "Quản lý Mật khẩu",
+    "description": "Ứng dụng quản lý mật khẩu an toàn"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "forgotPassword": "Quên mật khẩu?",
+    "rememberMe": "Ghi nhớ đăng nhập"
+  },
+  "masterPassword": {
+    "title": "Master Password",
+    "description": "Nhập master password để truy cập ứng dụng",
+    "placeholder": "Nhập master password",
+    "unlock": "Mở khóa",
+    "processing": "Đang xử lý...",
+    "backToLogin": "Quay lại đăng nhập",
+    "features": {
+      "encrypted": "🔒 Master password được mã hóa cục bộ",
+      "autoLock": "⏱️ Tự động khóa sau 5 phút không hoạt động",
+      "noServer": "🔑 Không lưu trữ master password trên server"
+    },
+    "errors": {
+      "required": "Vui lòng nhập master password",
+      "notLoggedIn": "Bạn chưa đăng nhập. Vui lòng đăng nhập trước.",
+      "saltNotFound": "Không tìm thấy salt từ server. Vui lòng đăng nhập lại.",
+      "invalidSalt": "Salt không hợp lệ. Vui lòng đăng nhập lại.",
+      "derivationFailed": "Không thể tạo master key. Vui lòng thử lại.",
+      "unlockFailed": "Có lỗi xảy ra khi mở khóa. Vui lòng thử lại."
+    },
+    "progress": {
+      "deriving": "Đang tạo master key... Vui lòng đợi"
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "appearance": "Giao diện",
+    "security": "Bảo mật",
+    "language": "Ngôn ngữ",
+    "theme": "Chế độ hiển thị",
+    "fontSize": "Kích thước chữ",
+    "displayMode": "Chế độ hiển thị",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Hệ thống"
+  },
+  "home": {
+    "title": "My Password Management",
+    "description": "Ứng dụng quản lý mật khẩu hiện đại với bảo mật end-to-end và giao diện thân thiện",
+    "navigation": {
+      "passwordVault": "Password Vault",
+      "settings": "Cài đặt"
+    },
+    "status": {
+      "loginStatus": "Trạng thái đăng nhập",
+      "vaultStatus": "Vault Status",
+      "language": "Ngôn ngữ",
+      "loggedIn": "Đã đăng nhập",
+      "notLoggedIn": "Chưa đăng nhập",
+      "unlocked": "Đã mở khóa",
+      "locked": "Đã khóa",
+      "autoLockIn": "Tự động khóa sau {minutes} phút"
+    },
+    "actions": {
+      "openVault": "Mở Password Vault",
+      "unlockVault": "Mở khóa Vault",
+      "login": "Đăng nhập",
+      "register": "Đăng ký"
+    },
+    "features": {
+      "title": "Tính Năng Nổi Bật",
+      "subtitle": "Bảo mật cao với trải nghiệm người dùng tuyệt vời",
+      "endToEndSecurity": {
+        "title": "Bảo mật End-to-End",
+        "description": "Mã hóa AES-256 với Argon2 để bảo vệ dữ liệu của bạn"
+      },
+      "responsiveDesign": {
+        "title": "Responsive Design",
+        "description": "Hoạt động mượt mà trên mọi thiết bị từ desktop đến mobile"
+      },
+      "darkMode": {
+        "title": "Dark Mode",
+        "description": "Giao diện tối hiện đại, dễ dàng cho mắt trong mọi điều kiện"
+      },
+      "highPerformance": {
+        "title": "Hiệu năng cao",
+        "description": "Tối ưu hóa với React 19 và Vite cho tốc độ nhanh chóng"
+      },
+      "autoLock": {
+        "title": "Auto-lock",
+        "description": "Tự động khóa ứng dụng để bảo vệ dữ liệu khi không sử dụng"
+      },
+      "clipboardSecurity": {
+        "title": "Clipboard Security",
+        "description": "Tự động xóa clipboard sau khi copy để tăng cường bảo mật"
+      }
+    }
+  },
+  "common": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "add": "Thêm",
+    "close": "Đóng",
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "warning": "Cảnh báo",
+    "info": "Thông tin"
+  }
+}

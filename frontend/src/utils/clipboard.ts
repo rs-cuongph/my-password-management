@@ -30,7 +30,7 @@ class ClipboardManager {
       onSuccess,
       onError,
       onCountdown,
-      showCountdown = true
+      showCountdown = true,
     } = options;
 
     try {
@@ -51,7 +51,7 @@ class ClipboardManager {
       let clearId: number | undefined;
       if (clearTimeout > 0) {
         clearId = this.setupAutoClear(text, type, clearTimeout, {
-          onCountdown: showCountdown ? onCountdown : undefined
+          onCountdown: showCountdown ? onCountdown : undefined,
         });
       }
 
@@ -61,9 +61,8 @@ class ClipboardManager {
       return {
         success: true,
         message: successMessage,
-        clearId
+        clearId,
       };
-
     } catch (error) {
       const errorMessage = `Không thể sao chép ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       onError?.(errorMessage);
@@ -71,7 +70,7 @@ class ClipboardManager {
       return {
         success: false,
         message: errorMessage,
-        error: errorMessage
+        error: errorMessage,
       };
     }
   }

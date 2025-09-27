@@ -34,22 +34,15 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
-    const { username, email, password } = registerDto;
+    const { email, password } = registerDto;
 
-    // Check if username or email already exists
+    // Check if email already exists
     const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ username }, { email }],
-      },
+      where: { email },
     });
 
     if (existingUser) {
-      if (existingUser.username === username) {
-        throw new ConflictException('Username đã tồn tại');
-      }
-      if (existingUser.email === email) {
-        throw new ConflictException('Email đã tồn tại');
-      }
+      throw new ConflictException('Email đã tồn tại');
     }
 
     // Generate random kdfSalt for client-side key derivation
@@ -62,7 +55,6 @@ export class AuthService {
     // Create user
     const user = await this.prisma.user.create({
       data: {
-        username,
         email,
         password: hashedPassword,
         kdfSalt,
@@ -76,15 +68,15 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
-    const { username, password } = loginDto;
+    const { email, password } = loginDto;
 
     try {
-      // Find user by username
+      // Find user by email
       const user = await this.prisma.user.findUnique({
-        where: { username },
+        where: { email },
         select: {
           id: true,
-          username: true,
+          email: true,
           password: true,
           kdfSalt: true,
           need2fa: true,
@@ -128,7 +120,7 @@ export class AuthService {
       // Generate temporary token for session (valid for 15 minutes)
       const tempTokenPayload = {
         sub: user.id,
-        username: user.username,
+        email: user.email,
         type: 'temp',
       };
 
@@ -158,7 +150,7 @@ export class AuthService {
 
     try {
       // Verify temp token
-      const payload = this.jwtService.verify(tempToken) as TempTokenPayload;
+      const payload = this.jwtService.verify(tempToken);
       if (payload.type !== 'temp') {
         throw new UnauthorizedException('Invalid token type');
       }
@@ -166,7 +158,7 @@ export class AuthService {
       // Get user
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { id: true, username: true, email: true, totpSecret: true },
+        select: { id: true, email: true, totpSecret: true },
       });
 
       if (!user) {
@@ -184,7 +176,7 @@ export class AuthService {
 
       // Generate TOTP secret
       const secret = speakeasy.generateSecret({
-        name: `Vibe Kanban (${user.username})`,
+        name: `Vibe Kanban (${user.email})`,
         issuer: 'Vibe Kanban',
         length: 32,
       });
@@ -238,7 +230,7 @@ export class AuthService {
 
     try {
       // Verify temp token
-      const payload = this.jwtService.verify(tempToken) as TempTokenPayload;
+      const payload = this.jwtService.verify(tempToken);
       if (payload.type !== 'temp') {
         throw new UnauthorizedException('Invalid token type');
       }
@@ -246,7 +238,7 @@ export class AuthService {
       // Get user with encrypted TOTP secret
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { id: true, username: true, totpSecret: true, kdfSalt: true },
+        select: { id: true, email: true, totpSecret: true, kdfSalt: true },
       });
 
       if (!user) {
@@ -294,7 +286,7 @@ export class AuthService {
       // Generate access token with 1 hour TTL
       const accessTokenPayload = {
         sub: user.id,
-        username: user.username,
+        email: user.email,
         type: 'access',
       };
 

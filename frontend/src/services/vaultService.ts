@@ -1,6 +1,11 @@
 import { api } from './api';
-import { VaultCryptoService, VaultPayload, PasswordEntry, EncryptedVaultPayload } from '../utils/vaultCrypto';
-import { KDFParams } from '../utils/crypto';
+import { VaultCryptoService } from '../utils/vaultCrypto';
+import type {
+  VaultPayload,
+  PasswordEntry,
+  EncryptedVaultPayload,
+} from '../utils/vaultCrypto';
+import type { KDFParams } from '../utils/crypto';
 
 export interface VaultSyncStatus {
   status: 'saved' | 'saving' | 'error' | 'conflict' | 'syncing';
@@ -39,24 +44,27 @@ export interface VaultSaveResult {
 }
 
 class VaultService {
-  private readonly baseUrl = '/api/v1/vault';
+  private readonly baseUrl = '/vault';
   private currentVault: VaultPayload | null = null;
   private syncStatus: VaultSyncStatus = {
     status: 'saved',
     localVersion: 0,
     hasUnsavedChanges: false,
   };
-  private autoSaveTimer: NodeJS.Timeout | null = null;
+  private autoSaveTimer: number | null = null;
   private readonly AUTO_SAVE_DELAY = 5000; // 5 seconds debounce
 
   /**
    * Load vault from server and decrypt
    */
-  async loadVault(masterPassword: string, kdfParams: KDFParams): Promise<VaultLoadResult> {
+  async loadVault(
+    masterPassword: string,
+    kdfParams: KDFParams
+  ): Promise<VaultLoadResult> {
     try {
       this.setSyncStatus({ status: 'syncing' });
 
-      const response = await api.get(`${this.baseUrl}/data`);
+      const response = await api.get(`${this.baseUrl}`);
 
       if (response.status === 204) {
         // No vault exists yet, create empty one
@@ -94,7 +102,7 @@ class VaultService {
     } catch (error: any) {
       this.setSyncStatus({
         status: 'error',
-        error: error.message || 'Failed to load vault'
+        error: error.message || 'Failed to load vault',
       });
 
       if (error.status === 401) {
@@ -108,7 +116,11 @@ class VaultService {
   /**
    * Save vault to server (manual save)
    */
-  async saveVault(masterPassword: string, kdfParams: KDFParams, force = false): Promise<VaultSaveResult> {
+  async saveVault(
+    masterPassword: string,
+    kdfParams: KDFParams,
+    force = false
+  ): Promise<VaultSaveResult> {
     if (!this.currentVault) {
       return { success: false, error: 'No vault to save' };
     }
@@ -124,7 +136,7 @@ class VaultService {
       );
 
       // Save to server
-      const response = await api.post(`${this.baseUrl}/save`, {
+      const response = await api.post(`${this.baseUrl}`, {
         encryptedPayload: encryptResult.encryptedPayload,
         wrappedDEK: encryptResult.wrappedDEK,
         version: this.syncStatus.localVersion,
@@ -161,7 +173,7 @@ class VaultService {
     } catch (error: any) {
       this.setSyncStatus({
         status: 'error',
-        error: error.message || 'Failed to save vault'
+        error: error.message || 'Failed to save vault',
       });
 
       return { success: false, error: error.message || 'Failed to save vault' };
@@ -196,13 +208,12 @@ class VaultService {
 
       // Schedule auto-save
       this.scheduleAutoSave();
-
-    } catch (error) {
+    } catch {
       // Rollback on error
       this.currentVault = backup;
       this.setSyncStatus({
         status: 'error',
-        error: 'Failed to update vault'
+        error: 'Failed to update vault',
       });
     }
   }
@@ -210,10 +221,15 @@ class VaultService {
   /**
    * Add password entry to vault
    */
-  addPasswordEntry(entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>): string {
+  addPasswordEntry(
+    entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>
+  ): string {
     if (!this.currentVault) throw new Error('No vault loaded');
 
-    const updatedVault = VaultCryptoService.addPasswordEntry(this.currentVault, entry);
+    const updatedVault = VaultCryptoService.addPasswordEntry(
+      this.currentVault,
+      entry
+    );
     this.currentVault = updatedVault;
 
     this.setSyncStatus({
@@ -225,7 +241,8 @@ class VaultService {
     this.scheduleAutoSave();
 
     // Return the ID of the new entry
-    const newEntry = updatedVault.passwordEntries?.[updatedVault.passwordEntries.length - 1];
+    const newEntry =
+      updatedVault.passwordEntries?.[updatedVault.passwordEntries.length - 1];
     return newEntry?.id || '';
   }
 
@@ -235,7 +252,11 @@ class VaultService {
   updatePasswordEntry(entryId: string, updates: Partial<PasswordEntry>): void {
     if (!this.currentVault) throw new Error('No vault loaded');
 
-    const updatedVault = VaultCryptoService.updatePasswordEntry(this.currentVault, entryId, updates);
+    const updatedVault = VaultCryptoService.updatePasswordEntry(
+      this.currentVault,
+      entryId,
+      updates
+    );
     this.currentVault = updatedVault;
 
     this.setSyncStatus({
@@ -253,7 +274,10 @@ class VaultService {
   removePasswordEntry(entryId: string): void {
     if (!this.currentVault) throw new Error('No vault loaded');
 
-    const updatedVault = VaultCryptoService.removePasswordEntry(this.currentVault, entryId);
+    const updatedVault = VaultCryptoService.removePasswordEntry(
+      this.currentVault,
+      entryId
+    );
     this.currentVault = updatedVault;
 
     this.setSyncStatus({
@@ -288,7 +312,10 @@ class VaultService {
     const credentials = this.getStoredCredentials();
     if (!credentials) return;
 
-    const result = await this.saveVault(credentials.masterPassword, credentials.kdfParams);
+    const result = await this.saveVault(
+      credentials.masterPassword,
+      credentials.kdfParams
+    );
 
     if (!result.success && result.conflict) {
       // Handle conflicts in auto-save by deferring to manual resolution
@@ -353,10 +380,16 @@ class VaultService {
       callback(event.detail);
     };
 
-    window.addEventListener('vault-sync-status-change', handler as EventListener);
+    window.addEventListener(
+      'vault-sync-status-change',
+      handler as EventListener
+    );
 
     return () => {
-      window.removeEventListener('vault-sync-status-change', handler as EventListener);
+      window.removeEventListener(
+        'vault-sync-status-change',
+        handler as EventListener
+      );
     };
   }
 
@@ -391,7 +424,10 @@ class VaultService {
   /**
    * Get stored credentials (implement based on your auth system)
    */
-  private getStoredCredentials(): { masterPassword: string; kdfParams: KDFParams } | null {
+  private getStoredCredentials(): {
+    masterPassword: string;
+    kdfParams: KDFParams;
+  } | null {
     // This should integrate with your master password store
     // For now, return null to disable auto-save when credentials not available
     return null;

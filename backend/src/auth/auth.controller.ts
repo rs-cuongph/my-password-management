@@ -1,4 +1,12 @@
-import { Controller, Post, Body, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  HttpStatus,
+  HttpCode,
+  Req,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -7,6 +15,8 @@ import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { Setup2faDto, Setup2faResponseDto } from './dto/setup-2fa.dto';
 import { Verify2faDto, Verify2faResponseDto } from './dto/verify-2fa.dto';
 import { Public } from './decorators/public.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 import {
   SensitiveRateLimit,
   StrictRateLimit,
@@ -50,5 +60,15 @@ export class AuthController {
     @Body() verify2faDto: Verify2faDto,
   ): Promise<Verify2faResponseDto> {
     return this.authService.verify2fa(verify2faDto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  getMe(@Req() req: any) {
+    return {
+      id: req.user.userId,
+      email: req.user.email,
+    };
   }
 }

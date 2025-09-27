@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../contexts/ToastContext';
-import { useMasterPasswordStore, getMasterPasswordStatus } from '../stores/masterPasswordStore';
+import {
+  useMasterPasswordStore,
+  getMasterPasswordStatus,
+} from '../stores/masterPasswordStore';
 
 interface AutoLockWarningProps {
   warningThresholds?: number[]; // Time in seconds before lock to show warnings
@@ -9,11 +12,11 @@ interface AutoLockWarningProps {
 
 export const AutoLockWarning: React.FC<AutoLockWarningProps> = ({
   warningThresholds = [300, 60, 30, 10], // 5 min, 1 min, 30 sec, 10 sec
-  enabled = true
+  enabled = true,
 }) => {
   const [lastWarningTime, setLastWarningTime] = useState<number>(0);
   const [isExtending, setIsExtending] = useState(false);
-  const { addToast, removeToast } = useToast();
+  const { addToast } = useToast();
   const { extendSession } = useMasterPasswordStore();
 
   const checkWarnings = useCallback(() => {
@@ -23,10 +26,12 @@ export const AutoLockWarning: React.FC<AutoLockWarningProps> = ({
     if (!status.isUnlocked || !status.autoLockEnabled) return;
 
     const timeUntilLockSeconds = Math.floor(status.timeUntilLock / 1000);
-    
+
     // Find the appropriate warning threshold
-    const threshold = warningThresholds.find(t => timeUntilLockSeconds <= t && timeUntilLockSeconds > lastWarningTime);
-    
+    const threshold = warningThresholds.find(
+      (t) => timeUntilLockSeconds <= t && timeUntilLockSeconds > lastWarningTime
+    );
+
     if (threshold && timeUntilLockSeconds <= threshold) {
       setLastWarningTime(timeUntilLockSeconds);
       showWarning(timeUntilLockSeconds);
@@ -43,7 +48,9 @@ export const AutoLockWarning: React.FC<AutoLockWarningProps> = ({
       if (seconds >= 60) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        return remainingSeconds > 0 ? `${minutes} phút ${remainingSeconds} giây` : `${minutes} phút`;
+        return remainingSeconds > 0
+          ? `${minutes} phút ${remainingSeconds} giây`
+          : `${minutes} phút`;
       }
       return `${seconds} giây`;
     };
@@ -55,13 +62,13 @@ export const AutoLockWarning: React.FC<AutoLockWarningProps> = ({
         addToast({
           message: 'Phiên làm việc đã được gia hạn',
           type: 'success',
-          duration: 3000
+          duration: 3000,
         });
       } catch (error) {
         addToast({
           message: 'Không thể gia hạn phiên làm việc',
           type: 'error',
-          duration: 5000
+          duration: 5000,
         });
       } finally {
         setIsExtending(false);
@@ -95,8 +102,8 @@ export const AutoLockWarning: React.FC<AutoLockWarningProps> = ({
       showProgress: timeLeft > 30,
       action: {
         label: isExtending ? 'Đang gia hạn...' : 'Gia hạn phiên',
-        onClick: handleExtendSession
-      }
+        onClick: handleExtendSession,
+      },
     });
   };
 
@@ -117,7 +124,12 @@ export const useAutoLockWarning = (options?: {
   onWarning?: (timeLeft: number) => void;
   onLockImminent?: () => void;
 }) => {
-  const { warningThresholds = [300, 60, 30, 10], enabled = true, onWarning, onLockImminent } = options || {};
+  const {
+    warningThresholds = [300, 60, 30, 10],
+    enabled = true,
+    onWarning,
+    onLockImminent,
+  } = options || {};
   const [timeUntilLock, setTimeUntilLock] = useState<number>(0);
   const [lastWarning, setLastWarning] = useState<number>(0);
 
@@ -132,7 +144,9 @@ export const useAutoLockWarning = (options?: {
       setTimeUntilLock(timeLeftSeconds);
 
       // Check for warnings
-      const threshold = warningThresholds.find(t => timeLeftSeconds <= t && timeLeftSeconds > lastWarning);
+      const threshold = warningThresholds.find(
+        (t) => timeLeftSeconds <= t && timeLeftSeconds > lastWarning
+      );
       if (threshold && timeLeftSeconds <= threshold) {
         setLastWarning(timeLeftSeconds);
         onWarning?.(timeLeftSeconds);
@@ -155,9 +169,9 @@ export const useAutoLockWarning = (options?: {
 
   return {
     timeUntilLock,
-    isWarningActive: warningThresholds.some(t => timeUntilLock <= t),
+    isWarningActive: warningThresholds.some((t) => timeUntilLock <= t),
     isUrgent: timeUntilLock <= 30,
-    isCritical: timeUntilLock <= 10
+    isCritical: timeUntilLock <= 10,
   };
 };
 
@@ -166,9 +180,10 @@ export const AutoLockWarningBanner: React.FC<{
   showWhen?: number; // Show banner when time left is less than this (in seconds)
   className?: string;
 }> = ({ showWhen = 60, className = '' }) => {
-  const { timeUntilLock, isWarningActive, isUrgent, isCritical } = useAutoLockWarning({
-    warningThresholds: [showWhen]
-  });
+  const { timeUntilLock, isWarningActive, isUrgent, isCritical } =
+    useAutoLockWarning({
+      warningThresholds: [showWhen],
+    });
   const [isExtending, setIsExtending] = useState(false);
   const { extendSession } = useMasterPasswordStore();
   const { addToast } = useToast();
@@ -180,13 +195,13 @@ export const AutoLockWarningBanner: React.FC<{
       addToast({
         message: 'Phiên làm việc đã được gia hạn',
         type: 'success',
-        duration: 3000
+        duration: 3000,
       });
     } catch (error) {
       addToast({
         message: 'Không thể gia hạn phiên làm việc',
         type: 'error',
-        duration: 5000
+        duration: 5000,
       });
     } finally {
       setIsExtending(false);
@@ -201,7 +216,9 @@ export const AutoLockWarningBanner: React.FC<{
     if (seconds >= 60) {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
-      return remainingSeconds > 0 ? `${minutes}:${remainingSeconds.toString().padStart(2, '0')}` : `${minutes}:00`;
+      return remainingSeconds > 0
+        ? `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+        : `${minutes}:00`;
     }
     return `${seconds}`;
   };
@@ -217,15 +234,19 @@ export const AutoLockWarningBanner: React.FC<{
   };
 
   return (
-    <div className={`
+    <div
+      className={`
       border rounded-xl p-4 mb-4 transition-all duration-300
       ${getBannerStyle()}
       ${isCritical ? 'animate-pulse' : ''}
       ${className}
-    `}>
+    `}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`${isCritical ? 'animate-bounce' : isUrgent ? 'animate-pulse' : ''}`}>
+          <div
+            className={`${isCritical ? 'animate-bounce' : isUrgent ? 'animate-pulse' : ''}`}
+          >
             {isCritical ? '🚨' : isUrgent ? '⚠️' : '⏰'}
           </div>
           <div>
@@ -233,21 +254,23 @@ export const AutoLockWarningBanner: React.FC<{
               {isCritical ? 'Vault sắp tự khóa!' : 'Thông báo tự khóa'}
             </p>
             <p className="text-sm opacity-90">
-              Vault sẽ tự khóa sau {formatTime(timeUntilLock)} {timeUntilLock >= 60 ? '' : 'giây'}
+              Vault sẽ tự khóa sau {formatTime(timeUntilLock)}{' '}
+              {timeUntilLock >= 60 ? '' : 'giây'}
             </p>
           </div>
         </div>
-        
+
         <button
           onClick={handleExtend}
           disabled={isExtending}
           className={`
             px-4 py-2 rounded-lg font-medium transition-all
-            ${isCritical 
-              ? 'bg-error-600 hover:bg-error-700 text-white' 
-              : isUrgent
-                ? 'bg-warning-600 hover:bg-warning-700 text-white'
-                : 'bg-primary-600 hover:bg-primary-700 text-white'
+            ${
+              isCritical
+                ? 'bg-error-600 hover:bg-error-700 text-white'
+                : isUrgent
+                  ? 'bg-warning-600 hover:bg-warning-700 text-white'
+                  : 'bg-primary-600 hover:bg-primary-700 text-white'
             }
             disabled:opacity-50 disabled:cursor-not-allowed
           `}

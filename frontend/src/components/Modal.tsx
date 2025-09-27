@@ -28,7 +28,7 @@ const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   className = '',
   overlayClassName = '',
-  contentClassName = ''
+  contentClassName = '',
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const { screenReaderAnnouncements } = useAppStore();
@@ -37,7 +37,7 @@ const Modal: React.FC<ModalProps> = ({
     trapFocus: true,
     restoreFocus: true,
     autoFocus: true,
-    announceToScreenReader: screenReaderAnnouncements
+    announceToScreenReader: screenReaderAnnouncements,
   });
 
   // Handle escape key
@@ -120,7 +120,9 @@ const Modal: React.FC<ModalProps> = ({
         `}
       >
         {/* Header */}
-        <div className={`flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700 ${contentClassName}`}>
+        <div
+          className={`flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700 ${contentClassName}`}
+        >
           <h2
             id="modal-title"
             className="text-xl font-semibold text-neutral-900 dark:text-neutral-100"

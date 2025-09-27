@@ -1,0 +1,117 @@
+{
+  "app": {
+    "name": "Password Manager",
+    "description": "Secure password management application"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me"
+  },
+  "masterPassword": {
+    "title": "Master Password",
+    "description": "Enter master password to access the application",
+    "placeholder": "Enter master password",
+    "unlock": "Unlock",
+    "processing": "Processing...",
+    "backToLogin": "Back to Login",
+    "features": {
+      "encrypted": "🔒 Master password is encrypted locally",
+      "autoLock": "⏱️ Auto-lock after 5 minutes of inactivity",
+      "noServer": "🔑 Master password is not stored on server"
+    },
+    "errors": {
+      "required": "Please enter master password",
+      "notLoggedIn": "You are not logged in. Please login first.",
+      "saltNotFound": "Salt not found from server. Please login again.",
+      "invalidSalt": "Invalid salt. Please login again.",
+      "derivationFailed": "Failed to create master key. Please try again.",
+      "unlockFailed": "An error occurred while unlocking. Please try again."
+    },
+    "progress": {
+      "deriving": "Creating master key... Please wait"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "security": "Security",
+    "language": "Language",
+    "theme": "Display Mode",
+    "fontSize": "Font Size",
+    "displayMode": "Display Mode",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "home": {
+    "title": "My Password Management",
+    "description": "Modern password management application with end-to-end security and user-friendly interface",
+    "navigation": {
+      "passwordVault": "Password Vault",
+      "settings": "Settings"
+    },
+    "status": {
+      "loginStatus": "Login Status",
+      "vaultStatus": "Vault Status",
+      "language": "Language",
+      "loggedIn": "Logged In",
+      "notLoggedIn": "Not Logged In",
+      "unlocked": "Unlocked",
+      "locked": "Locked",
+      "autoLockIn": "Auto-lock in {minutes} minutes"
+    },
+    "actions": {
+      "openVault": "Open Password Vault",
+      "unlockVault": "Unlock Vault",
+      "login": "Login",
+      "register": "Register"
+    },
+    "features": {
+      "title": "Key Features",
+      "subtitle": "High security with excellent user experience",
+      "endToEndSecurity": {
+        "title": "End-to-End Security",
+        "description": "AES-256 encryption with Argon2 to protect your data"
+      },
+      "responsiveDesign": {
+        "title": "Responsive Design",
+        "description": "Smooth operation on all devices from desktop to mobile"
+      },
+      "darkMode": {
+        "title": "Dark Mode",
+        "description": "Modern dark interface, easy on the eyes in all conditions"
+      },
+      "highPerformance": {
+        "title": "High Performance",
+        "description": "Optimized with React 19 and Vite for fast speed"
+      },
+      "autoLock": {
+        "title": "Auto-lock",
+        "description": "Automatically lock the application to protect data when not in use"
+      },
+      "clipboardSecurity": {
+        "title": "Clipboard Security",
+        "description": "Automatically clear clipboard after copying to enhance security"
+      }
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  }
+}

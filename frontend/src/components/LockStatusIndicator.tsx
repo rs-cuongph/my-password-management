@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useMasterPasswordStore, getMasterPasswordStatus } from '../stores/masterPasswordStore';
+import {
+  useMasterPasswordStore,
+  getMasterPasswordStatus,
+} from '../stores/masterPasswordStore';
 
 interface LockStatusIndicatorProps {
   showTimeRemaining?: boolean;
@@ -65,7 +68,9 @@ export const LockStatusIndicator = ({
     <div className={`flex items-center space-x-3 ${className}`}>
       {/* Lock Status Icon */}
       <div className="flex items-center space-x-2">
-        <div className={`w-2 h-2 rounded-full ${status.isUnlocked ? 'bg-green-500' : 'bg-red-500'}`} />
+        <div
+          className={`w-2 h-2 rounded-full ${status.isUnlocked ? 'bg-green-500' : 'bg-red-500'}`}
+        />
         <span className={`text-sm font-medium ${getStatusColor()}`}>
           {status.isUnlocked ? 'Unlocked' : 'Locked'}
         </span>
@@ -121,7 +126,8 @@ export const LockStatusIndicator = ({
       {!status.isUnlocked && status.lockReason && (
         <div className="text-xs text-gray-500">
           {status.lockReason === 'timeout' && '(Auto-locked due to inactivity)'}
-          {status.lockReason === 'focus_lost' && '(Auto-locked due to tab switch)'}
+          {status.lockReason === 'focus_lost' &&
+            '(Auto-locked due to tab switch)'}
           {status.lockReason === 'manual' && '(Manually locked)'}
         </div>
       )}
@@ -130,7 +136,11 @@ export const LockStatusIndicator = ({
 };
 
 // Compact version for smaller spaces
-export const CompactLockIndicator = ({ onManualLock }: { onManualLock?: () => void }) => {
+export const CompactLockIndicator = ({
+  onManualLock,
+}: {
+  onManualLock?: () => void;
+}) => {
   const [status, setStatus] = useState(getMasterPasswordStatus);
   const { lock } = useMasterPasswordStore();
 
@@ -165,7 +175,12 @@ export const CompactLockIndicator = ({ onManualLock }: { onManualLock?: () => vo
           className="p-1 text-gray-500 hover:text-gray-700 rounded"
           title="Lock Vault"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

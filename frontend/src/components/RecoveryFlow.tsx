@@ -13,11 +13,11 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
   wrappedDEK,
   salt,
   onSuccess,
-  onCancel
+  onCancel,
 }) => {
   const [state, setState] = useState<RecoveryFlowState>({
     step: 'input',
-    recoveryCode: ''
+    recoveryCode: '',
   });
   const [rawInput, setRawInput] = useState('');
 
@@ -25,11 +25,9 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
   useEffect(() => {
     const cleanInput = rawInput.replace(/[^A-Za-z2-7]/g, '').toUpperCase();
     if (cleanInput.length <= 32) {
-      const formatted = cleanInput
-        .replace(/(.{8})/g, '$1-')
-        .replace(/-$/, ''); // Remove trailing dash
+      const formatted = cleanInput.replace(/(.{8})/g, '$1-').replace(/-$/, ''); // Remove trailing dash
 
-      setState(prev => ({ ...prev, recoveryCode: formatted }));
+      setState((prev) => ({ ...prev, recoveryCode: formatted }));
     }
   }, [rawInput]);
 
@@ -46,33 +44,33 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
     // Validate format first
     const validation = recoveryService.validateCodeFormat(state.recoveryCode);
     if (!validation.valid) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         step: 'error',
-        error: validation.error
+        error: validation.error,
       }));
       return;
     }
 
-    setState(prev => ({ ...prev, step: 'validating' }));
+    setState((prev) => ({ ...prev, step: 'validating' }));
 
     try {
       // Step 1: Validate recovery code
       const validateResponse = await recoveryService.validateRecoveryCode({
         recoveryCode: state.recoveryCode,
-        salt
+        salt,
       });
 
       if (!validateResponse.valid) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           step: 'error',
-          error: validateResponse.error || 'Invalid recovery code'
+          error: validateResponse.error || 'Invalid recovery code',
         }));
         return;
       }
 
-      setState(prev => ({ ...prev, step: 'recovering' }));
+      setState((prev) => ({ ...prev, step: 'recovering' }));
 
       // Step 2: Recover DEK
       const recoverResponse = await recoveryService.recoverDEK({
@@ -80,25 +78,27 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
         salt,
         encryptedDEK: wrappedDEK.encryptedDEK,
         nonce: wrappedDEK.nonce,
-        tag: wrappedDEK.tag
+        tag: wrappedDEK.tag,
       });
 
       if (recoverResponse.success && recoverResponse.dek) {
-        setState(prev => ({ ...prev, step: 'success' }));
+        setState((prev) => ({ ...prev, step: 'success' }));
         onSuccess(recoverResponse.dek);
       } else {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           step: 'error',
-          error: recoveryService.getRecoveryErrorMessage(recoverResponse.context),
-          context: recoverResponse.context
+          error: recoveryService.getRecoveryErrorMessage(
+            recoverResponse.context
+          ),
+          context: recoverResponse.context,
         }));
       }
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         step: 'error',
-        error: error instanceof Error ? error.message : 'Recovery failed'
+        error: error instanceof Error ? error.message : 'Recovery failed',
       }));
     }
   };
@@ -106,7 +106,7 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
   const handleRetry = () => {
     setState({
       step: 'input',
-      recoveryCode: ''
+      recoveryCode: '',
     });
     setRawInput('');
   };
@@ -120,12 +120,16 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
               🔑 Enter Recovery Code
             </h3>
             <p className="text-gray-600 mb-6">
-              Enter your recovery code to unlock your vault. This code was generated when you first set up your vault.
+              Enter your recovery code to unlock your vault. This code was
+              generated when you first set up your vault.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="recoveryCode" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="recoveryCode"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Recovery Code
                 </label>
                 <input
@@ -140,7 +144,8 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
                   spellCheck={false}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter your 32-character recovery code. Spaces and hyphens will be handled automatically.
+                  Enter your 32-character recovery code. Spaces and hyphens will
+                  be handled automatically.
                 </p>
               </div>
 
@@ -168,7 +173,9 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
         return (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Validating Recovery Code</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Validating Recovery Code
+            </h3>
             <p className="text-gray-600">Checking your recovery code...</p>
           </div>
         );
@@ -177,7 +184,9 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
         return (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Unlocking Vault</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Unlocking Vault
+            </h3>
             <p className="text-gray-600">Recovering your vault data...</p>
           </div>
         );
@@ -186,12 +195,26 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
         return (
           <div className="text-center py-8">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Vault Unlocked Successfully!</h3>
-            <p className="text-gray-600">Your vault has been recovered using the recovery code.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Vault Unlocked Successfully!
+            </h3>
+            <p className="text-gray-600">
+              Your vault has been recovered using the recovery code.
+            </p>
           </div>
         );
 
@@ -199,33 +222,69 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
         return (
           <div className="text-center py-8">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Recovery Failed</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Recovery Failed
+            </h3>
             <p className="text-red-600 mb-4">{state.error}</p>
 
             {/* Detailed error context for debugging */}
             {state.context && (
               <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Diagnostic Information:</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Diagnostic Information:
+                </h4>
                 <ul className="text-xs text-gray-600 space-y-1">
                   <li className="flex items-center space-x-2">
-                    <span className={`w-2 h-2 rounded-full ${state.context.codeFormatValid ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span>Code format: {state.context.codeFormatValid ? 'Valid' : 'Invalid'}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${state.context.codeFormatValid ? 'bg-green-500' : 'bg-red-500'}`}
+                    ></span>
+                    <span>
+                      Code format:{' '}
+                      {state.context.codeFormatValid ? 'Valid' : 'Invalid'}
+                    </span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <span className={`w-2 h-2 rounded-full ${state.context.saltValid ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span>Recovery data: {state.context.saltValid ? 'Valid' : 'Invalid'}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${state.context.saltValid ? 'bg-green-500' : 'bg-red-500'}`}
+                    ></span>
+                    <span>
+                      Recovery data:{' '}
+                      {state.context.saltValid ? 'Valid' : 'Invalid'}
+                    </span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <span className={`w-2 h-2 rounded-full ${state.context.keyDerivationSucceeded ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span>Key derivation: {state.context.keyDerivationSucceeded ? 'Success' : 'Failed'}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${state.context.keyDerivationSucceeded ? 'bg-green-500' : 'bg-red-500'}`}
+                    ></span>
+                    <span>
+                      Key derivation:{' '}
+                      {state.context.keyDerivationSucceeded
+                        ? 'Success'
+                        : 'Failed'}
+                    </span>
                   </li>
                   <li className="flex items-center space-x-2">
-                    <span className={`w-2 h-2 rounded-full ${state.context.unwrappingSucceeded ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span>Vault unlock: {state.context.unwrappingSucceeded ? 'Success' : 'Failed'}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${state.context.unwrappingSucceeded ? 'bg-green-500' : 'bg-red-500'}`}
+                    ></span>
+                    <span>
+                      Vault unlock:{' '}
+                      {state.context.unwrappingSucceeded ? 'Success' : 'Failed'}
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -258,16 +317,24 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
-              Vault Recovery
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900">Vault Recovery</h2>
             {state.step === 'input' && (
               <button
                 onClick={onCancel}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -280,8 +347,16 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-blue-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -289,7 +364,10 @@ export const RecoveryFlow: React.FC<RecoveryFlowProps> = ({
                     Security Notice
                   </h3>
                   <div className="mt-1 text-sm text-blue-700">
-                    <p>Recovery codes bypass your master password. Only use this if you have lost access to your master password.</p>
+                    <p>
+                      Recovery codes bypass your master password. Only use this
+                      if you have lost access to your master password.
+                    </p>
                   </div>
                 </div>
               </div>

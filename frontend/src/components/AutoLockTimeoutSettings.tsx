@@ -15,11 +15,15 @@ const AUTO_LOCK_OPTIONS = [
   { value: 60 * 60 * 1000, label: '1 giờ' },
 ];
 
-export const AutoLockTimeoutSettings: React.FC<AutoLockTimeoutSettingsProps> = ({ className }) => {
+export const AutoLockTimeoutSettings: React.FC<
+  AutoLockTimeoutSettingsProps
+> = ({ className }) => {
   const { autoLockTimeout, setAutoLockTimeout } = useMasterPasswordStore();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentOption = AUTO_LOCK_OPTIONS.find(option => option.value === autoLockTimeout) || AUTO_LOCK_OPTIONS[2];
+  const currentOption =
+    AUTO_LOCK_OPTIONS.find((option) => option.value === autoLockTimeout) ||
+    AUTO_LOCK_OPTIONS[2];
 
   const handleOptionSelect = (value: number) => {
     setAutoLockTimeout(value);
@@ -43,7 +47,12 @@ export const AutoLockTimeoutSettings: React.FC<AutoLockTimeoutSettingsProps> = (
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 

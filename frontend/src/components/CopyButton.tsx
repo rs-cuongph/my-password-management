@@ -27,7 +27,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
   children,
   title,
   onCopySuccess,
-  onCopyError
+  onCopyError,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -79,16 +79,18 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
       const result = await copyToClipboard(text, type, {
         clearTimeout,
         showCountdown,
-        onCountdown: showCountdown ? (remaining) => {
-          setCountdown(remaining);
-          if (toastId) {
-            updateToast(toastId, {
-              countdown: remaining,
-              showCountdown: true,
-              message: `${type} đã được sao chép vào clipboard${clearTimeout > 0 ? ` (tự xóa sau ${remaining}s)` : ''}`
-            });
-          }
-        } : undefined
+        onCountdown: showCountdown
+          ? (remaining) => {
+              setCountdown(remaining);
+              if (toastId) {
+                updateToast(toastId, {
+                  countdown: remaining,
+                  showCountdown: true,
+                  message: `${type} đã được sao chép vào clipboard${clearTimeout > 0 ? ` (tự xóa sau ${remaining}s)` : ''}`,
+                });
+              }
+            }
+          : undefined,
       });
 
       if (result.success) {
@@ -99,7 +101,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
           duration: clearTimeout > 0 ? (clearTimeout + 1) * 1000 : 3000,
           countdown: clearTimeout,
           showCountdown: showCountdown && clearTimeout > 0,
-          showProgress: clearTimeout > 0 && showCountdown
+          showProgress: clearTimeout > 0 && showCountdown,
         });
         setToastId(newToastId);
 
@@ -114,7 +116,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
         addToast({
           message: result.message,
           type: 'error',
-          duration: 5000
+          duration: 5000,
         });
         onCopyError?.(result.error || 'Unknown error');
       }
@@ -123,13 +125,24 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
       addToast({
         message: errorMessage,
         type: 'error',
-        duration: 5000
+        duration: 5000,
       });
       onCopyError?.(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [text, type, clearTimeout, showCountdown, isLoading, toastId, addToast, updateToast, onCopySuccess, onCopyError]);
+  }, [
+    text,
+    type,
+    clearTimeout,
+    showCountdown,
+    isLoading,
+    toastId,
+    addToast,
+    updateToast,
+    onCopySuccess,
+    onCopyError,
+  ]);
 
   const handleCancelAutoClear = useCallback(() => {
     cancelClipboardAutoClear(type);
@@ -141,7 +154,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
     addToast({
       message: `Đã hủy tự xóa ${type}`,
       type: 'info',
-      duration: 2000
+      duration: 2000,
     });
   }, [type, toastId, removeToast, addToast]);
 
@@ -165,7 +178,11 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
         {children || (
           <>
             {isLoading ? (
-              <svg className={`${getIconSize()} animate-spin`} fill="none" viewBox="0 0 24 24">
+              <svg
+                className={`${getIconSize()} animate-spin`}
+                fill="none"
+                viewBox="0 0 24 24"
+              >
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -181,7 +198,12 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
                 />
               </svg>
             ) : (
-              <svg className={getIconSize()} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className={getIconSize()}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

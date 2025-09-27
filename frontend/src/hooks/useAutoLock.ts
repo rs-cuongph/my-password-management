@@ -12,13 +12,8 @@ export const useAutoLock = (options: UseAutoLockOptions = {}) => {
   const timerRef = useRef<number | null>(null);
   const isActiveRef = useRef(true);
 
-  const {
-    isUnlocked,
-    lastActivity,
-    autoLockTimeout,
-    lock,
-    updateActivity,
-  } = useMasterPasswordStore();
+  const { isUnlocked, lastActivity, autoLockTimeout, lock, updateActivity } =
+    useMasterPasswordStore();
 
   // Activity events that should reset the timer
   const activityEvents = [
@@ -97,7 +92,7 @@ export const useAutoLock = (options: UseAutoLockOptions = {}) => {
   useEffect(() => {
     if (isUnlocked) {
       // Add activity listeners
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         document.addEventListener(event, handleActivity, { passive: true });
       });
 
@@ -108,7 +103,7 @@ export const useAutoLock = (options: UseAutoLockOptions = {}) => {
       startTimer();
     } else {
       // Remove all listeners and stop timer when locked
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         document.removeEventListener(event, handleActivity);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -116,13 +111,20 @@ export const useAutoLock = (options: UseAutoLockOptions = {}) => {
     }
 
     return () => {
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         document.removeEventListener(event, handleActivity);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       stopTimer();
     };
-  }, [isUnlocked, handleActivity, handleVisibilityChange, startTimer, stopTimer, activityEvents]);
+  }, [
+    isUnlocked,
+    handleActivity,
+    handleVisibilityChange,
+    startTimer,
+    stopTimer,
+    activityEvents,
+  ]);
 
   // Handle unlock state changes
   useEffect(() => {

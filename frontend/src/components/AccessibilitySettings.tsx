@@ -10,12 +10,19 @@ const AccessibilitySettings: React.FC = () => {
     setFontSize,
     toggleHighContrast,
     toggleReducedMotion,
-    toggleScreenReaderAnnouncements
+    toggleScreenReaderAnnouncements,
   } = useAppStore();
 
   return (
-    <section className="card p-6" role="region" aria-labelledby="accessibility-heading">
-      <h2 id="accessibility-heading" className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
+    <section
+      className="card p-6"
+      role="region"
+      aria-labelledby="accessibility-heading"
+    >
+      <h2
+        id="accessibility-heading"
+        className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6"
+      >
         Cài đặt Accessibility
       </h2>
 
@@ -25,7 +32,11 @@ const AccessibilitySettings: React.FC = () => {
           <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
             Kích thước chữ
           </h3>
-          <div className="space-y-2" role="radiogroup" aria-labelledby="font-size-group">
+          <div
+            className="space-y-2"
+            role="radiogroup"
+            aria-labelledby="font-size-group"
+          >
             <label className="flex items-center space-x-3 cursor-pointer">
               <input
                 type="radio"
@@ -97,7 +108,9 @@ const AccessibilitySettings: React.FC = () => {
           </button>
         </div>
         <p id="high-contrast-desc" className="sr-only">
-          {highContrast ? 'Chế độ tương phản cao đang bật' : 'Chế độ tương phản cao đang tắt'}
+          {highContrast
+            ? 'Chế độ tương phản cao đang bật'
+            : 'Chế độ tương phản cao đang tắt'}
         </p>
 
         {/* Reduced Motion Toggle */}
@@ -133,7 +146,9 @@ const AccessibilitySettings: React.FC = () => {
           </button>
         </div>
         <p id="reduced-motion-desc" className="sr-only">
-          {reducedMotion ? 'Chế độ giảm chuyển động đang bật' : 'Chế độ giảm chuyển động đang tắt'}
+          {reducedMotion
+            ? 'Chế độ giảm chuyển động đang bật'
+            : 'Chế độ giảm chuyển động đang tắt'}
         </p>
 
         {/* Screen Reader Announcements Toggle */}
@@ -169,7 +184,9 @@ const AccessibilitySettings: React.FC = () => {
           </button>
         </div>
         <p id="screen-reader-desc" className="sr-only">
-          {screenReaderAnnouncements ? 'Thông báo screen reader đang bật' : 'Thông báo screen reader đang tắt'}
+          {screenReaderAnnouncements
+            ? 'Thông báo screen reader đang bật'
+            : 'Thông báo screen reader đang tắt'}
         </p>
 
         {/* Keyboard Navigation Help */}
@@ -178,11 +195,40 @@ const AccessibilitySettings: React.FC = () => {
             Hướng dẫn điều hướng bàn phím
           </h3>
           <ul className="text-xs text-primary-800 dark:text-primary-200 space-y-1">
-            <li><kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Tab</kbd> - Di chuyển đến phần tử tiếp theo</li>
-            <li><kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Shift + Tab</kbd> - Di chuyển đến phần tử trước</li>
-            <li><kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Enter</kbd> hoặc <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Space</kbd> - Kích hoạt phần tử</li>
-            <li><kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Escape</kbd> - Đóng modal hoặc menu</li>
-            <li><kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">Arrow Keys</kbd> - Điều hướng trong menu hoặc tab</li>
+            <li>
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Tab
+              </kbd>{' '}
+              - Di chuyển đến phần tử tiếp theo
+            </li>
+            <li>
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Shift + Tab
+              </kbd>{' '}
+              - Di chuyển đến phần tử trước
+            </li>
+            <li>
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Enter
+              </kbd>{' '}
+              hoặc{' '}
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Space
+              </kbd>{' '}
+              - Kích hoạt phần tử
+            </li>
+            <li>
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Escape
+              </kbd>{' '}
+              - Đóng modal hoặc menu
+            </li>
+            <li>
+              <kbd className="px-1 py-0.5 bg-primary-100 dark:bg-primary-900 rounded">
+                Arrow Keys
+              </kbd>{' '}
+              - Điều hướng trong menu hoặc tab
+            </li>
           </ul>
         </div>
       </div>

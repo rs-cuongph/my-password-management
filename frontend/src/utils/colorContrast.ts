@@ -5,13 +5,15 @@
 /**
  * Convert hex color to RGB
  */
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+export function hexToRgb(
+  hex: string
+): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
+        b: parseInt(result[3], 16),
       }
     : null;
 }
@@ -21,7 +23,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
  * https://www.w3.org/TR/WCAG20/#relativeluminancedef
  */
 export function getLuminance(r: number, g: number, b: number): number {
-  const [rs, gs, bs] = [r, g, b].map(c => {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
     c = c / 255;
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   });
@@ -52,7 +54,11 @@ export function getContrastRatio(color1: string, color2: string): number {
 /**
  * Check if contrast ratio meets WCAG AA standards
  */
-export function meetsWCAGAA(foreground: string, background: string, fontSize: 'normal' | 'large' = 'normal'): boolean {
+export function meetsWCAGAA(
+  foreground: string,
+  background: string,
+  fontSize: 'normal' | 'large' = 'normal'
+): boolean {
   const contrastRatio = getContrastRatio(foreground, background);
 
   // WCAG AA requires:
@@ -66,7 +72,11 @@ export function meetsWCAGAA(foreground: string, background: string, fontSize: 'n
 /**
  * Check if contrast ratio meets WCAG AAA standards
  */
-export function meetsWCAGAAA(foreground: string, background: string, fontSize: 'normal' | 'large' = 'normal'): boolean {
+export function meetsWCAGAAA(
+  foreground: string,
+  background: string,
+  fontSize: 'normal' | 'large' = 'normal'
+): boolean {
   const contrastRatio = getContrastRatio(foreground, background);
 
   // WCAG AAA requires:
@@ -110,7 +120,7 @@ export const accessibleColors = {
       600: '#2563eb', // 4.5:1 against white
       700: '#1d4ed8',
       800: '#1e40af',
-      900: '#1e3a8a'
+      900: '#1e3a8a',
     },
     neutral: {
       50: '#fafafa',
@@ -122,7 +132,7 @@ export const accessibleColors = {
       600: '#525252', // 4.5:1 against white
       700: '#404040', // 7:1 against white (AAA)
       800: '#262626',
-      900: '#171717'
+      900: '#171717',
     },
     error: {
       50: '#fef2f2',
@@ -134,8 +144,8 @@ export const accessibleColors = {
       600: '#dc2626', // 4.5:1 against white
       700: '#b91c1c',
       800: '#991b1b',
-      900: '#7f1d1d'
-    }
+      900: '#7f1d1d',
+    },
   },
   // Dark theme colors (WCAG AA compliant)
   dark: {
@@ -149,7 +159,7 @@ export const accessibleColors = {
       600: '#2563eb',
       700: '#1d4ed8',
       800: '#1e40af',
-      900: '#1e3a8a'
+      900: '#1e3a8a',
     },
     neutral: {
       50: '#fafafa', // 4.5:1 against dark
@@ -161,15 +171,18 @@ export const accessibleColors = {
       600: '#525252',
       700: '#404040',
       800: '#262626',
-      900: '#171717'
-    }
-  }
+      900: '#171717',
+    },
+  },
 };
 
 /**
  * Validate all colors in a palette
  */
-export function validateColorPalette(palette: Record<string, string>, background: string): Array<{
+export function validateColorPalette(
+  palette: Record<string, string>,
+  background: string
+): Array<{
   name: string;
   color: string;
   contrastRatio: number;
@@ -179,7 +192,7 @@ export function validateColorPalette(palette: Record<string, string>, background
     name,
     color,
     contrastRatio: getContrastRatio(color, background),
-    level: getAccessibilityLevel(color, background)
+    level: getAccessibilityLevel(color, background),
   }));
 }
 
@@ -198,7 +211,9 @@ export function findAccessibleColor(
   const validator = level === 'AAA' ? meetsWCAGAAA : meetsWCAGAA;
 
   // Find compliant colors
-  const compliantColors = colors.filter(color => validator(color, background));
+  const compliantColors = colors.filter((color) =>
+    validator(color, background)
+  );
 
   if (compliantColors.length === 0) return null;
 
@@ -213,8 +228,8 @@ export function findAccessibleColor(
     // Calculate Euclidean distance in RGB space
     const distance = Math.sqrt(
       Math.pow(targetRgb.r - rgb.r, 2) +
-      Math.pow(targetRgb.g - rgb.g, 2) +
-      Math.pow(targetRgb.b - rgb.b, 2)
+        Math.pow(targetRgb.g - rgb.g, 2) +
+        Math.pow(targetRgb.b - rgb.b, 2)
     );
 
     if (distance < minDistance) {

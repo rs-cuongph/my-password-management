@@ -1,5 +1,5 @@
 import React from 'react';
-import { VaultSyncStatus } from '../services/vaultService';
+import type { VaultSyncStatus } from '../services/vaultService';
 
 interface VaultSyncStatusProps {
   status: VaultSyncStatus;
@@ -127,18 +127,28 @@ export const VaultSyncStatusIndicator: React.FC<VaultSyncStatusProps> = ({
       )}
 
       {/* Manual Save Button */}
-      {onSave && status.hasUnsavedChanges && status.status !== 'saving' && (
+      {onSave && status.hasUnsavedChanges && status.status === 'saved' && (
         <button
           onClick={onSave}
-          disabled={status.status === 'saving'}
+          disabled={status.status !== 'saved'}
           className="
             px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400
             text-white text-sm font-medium rounded-lg transition-colors
             flex items-center gap-1.5
           "
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+            />
           </svg>
           Lưu ngay
         </button>
@@ -146,20 +156,22 @@ export const VaultSyncStatusIndicator: React.FC<VaultSyncStatusProps> = ({
 
       {/* Error Message */}
       {status.error && status.status === 'error' && (
-        <div className="text-xs text-red-600 max-w-xs truncate" title={status.error}>
+        <div
+          className="text-xs text-red-600 max-w-xs truncate"
+          title={status.error}
+        >
           {status.error}
         </div>
       )}
 
       {/* Version Info (for debugging) */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="text-xs text-gray-400 font-mono">
           v{status.localVersion}
-          {status.serverVersion && status.localVersion !== status.serverVersion && (
-            <span className="text-orange-500">
-              /s{status.serverVersion}
-            </span>
-          )}
+          {status.serverVersion &&
+            status.localVersion !== status.serverVersion && (
+              <span className="text-orange-500">/s{status.serverVersion}</span>
+            )}
         </div>
       )}
     </div>

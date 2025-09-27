@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
-  @IsNotEmpty({ message: 'Username is required' })
+  @IsNotEmpty({ message: 'Email is required' })
   @IsString()
-  username: string;
+  email: string;
 
   @IsNotEmpty({ message: 'Password is required' })
   @IsString()

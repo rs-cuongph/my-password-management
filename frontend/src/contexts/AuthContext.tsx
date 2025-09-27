@@ -1,6 +1,16 @@
-import React, { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
-import { useNavigate, useRouter } from '@tanstack/react-router';
-import { useAuthStore, isTokenExpired, getTokenExpiration } from '../stores/authStore';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import {
+  useAuthStore,
+  isTokenExpired,
+  getTokenExpiration,
+} from '../stores/authStore';
 // import { authApi } from '../services/authService';
 
 interface AuthContextValue {
@@ -34,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     logout: storeLogout,
-    setLoading
+    setLoading,
   } = useAuthStore();
 
   // Enhanced logout với cleanup
@@ -107,7 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const timeUntilExpiration = expiration - now;
 
     // Refresh 5 phút trước khi hết hạn
-    const refreshTime = Math.max(timeUntilExpiration - 5 * 60 * 1000, 60 * 1000);
+    const refreshTime = Math.max(
+      timeUntilExpiration - 5 * 60 * 1000,
+      60 * 1000
+    );
 
     refreshTimerRef.current = setTimeout(() => {
       refreshTokenIfNeeded();
@@ -196,7 +209,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAuthenticated, checkAuthStatus, refreshTokenIfNeeded]);
 
   const value: AuthContextValue = {
@@ -209,11 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshTokenIfNeeded,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextValue => {

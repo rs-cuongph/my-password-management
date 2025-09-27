@@ -31,7 +31,7 @@ import {
 import { VaultService } from '../services/vault.service';
 
 @ApiTags('Vault')
-@Controller('api/v1/vault')
+@Controller('vault')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class VaultController {

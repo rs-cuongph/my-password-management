@@ -37,7 +37,9 @@ interface AppActions {
 // Helper function to get system theme preference
 const getSystemTheme = (): 'light' | 'dark' => {
   if (typeof window !== 'undefined') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   }
   return 'light';
 };
@@ -52,13 +54,19 @@ const applyTheme = (theme: 'light' | 'dark') => {
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#fafafa');
+      metaThemeColor.setAttribute(
+        'content',
+        theme === 'dark' ? '#0a0a0a' : '#fafafa'
+      );
     }
   }
 };
 
 // Helper function to apply accessibility settings
-const applyAccessibilitySettings = (highContrast: boolean, reducedMotion: boolean) => {
+const applyAccessibilitySettings = (
+  highContrast: boolean,
+  reducedMotion: boolean
+) => {
   if (typeof document !== 'undefined') {
     const root = document.documentElement;
 
@@ -117,14 +125,16 @@ export const useAppStore = create<AppState & AppActions>()(
           get().setTheme(newTheme);
         },
 
-        setLanguage: (language) =>
-          set({ language }, undefined, 'setLanguage'),
+        setLanguage: (language) => set({ language }, undefined, 'setLanguage'),
 
-        setFontSize: (fontSize) =>
-          set({ fontSize }, undefined, 'setFontSize'),
+        setFontSize: (fontSize) => set({ fontSize }, undefined, 'setFontSize'),
 
         setClipboardAutoClearTimeout: (timeout) =>
-          set({ clipboardAutoClearTimeout: timeout }, undefined, 'setClipboardAutoClearTimeout'),
+          set(
+            { clipboardAutoClearTimeout: timeout },
+            undefined,
+            'setClipboardAutoClearTimeout'
+          ),
 
         initializeTheme: () => {
           const { theme } = get();
@@ -134,7 +144,9 @@ export const useAppStore = create<AppState & AppActions>()(
 
           // Listen for system theme changes
           if (typeof window !== 'undefined') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const mediaQuery = window.matchMedia(
+              '(prefers-color-scheme: dark)'
+            );
             const handleChange = () => {
               const { theme } = get();
               if (theme === 'system') {
@@ -142,7 +154,7 @@ export const useAppStore = create<AppState & AppActions>()(
               }
             };
             mediaQuery.addEventListener('change', handleChange);
-            
+
             // Cleanup function would be returned here in a useEffect
             return () => mediaQuery.removeEventListener('change', handleChange);
           }
@@ -177,7 +189,11 @@ export const useAppStore = create<AppState & AppActions>()(
         },
 
         setScreenReaderAnnouncements: (enabled) =>
-          set({ screenReaderAnnouncements: enabled }, undefined, 'setScreenReaderAnnouncements'),
+          set(
+            { screenReaderAnnouncements: enabled },
+            undefined,
+            'setScreenReaderAnnouncements'
+          ),
 
         toggleScreenReaderAnnouncements: () => {
           const { screenReaderAnnouncements } = get();
@@ -188,7 +204,8 @@ export const useAppStore = create<AppState & AppActions>()(
           const { highContrast, reducedMotion } = get();
 
           // Detect system preferences
-          const prefersReducedMotion = typeof window !== 'undefined' &&
+          const prefersReducedMotion =
+            typeof window !== 'undefined' &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
           if (prefersReducedMotion && !reducedMotion) {
@@ -200,13 +217,16 @@ export const useAppStore = create<AppState & AppActions>()(
 
           // Listen for system motion preference changes
           if (typeof window !== 'undefined') {
-            const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            const motionQuery = window.matchMedia(
+              '(prefers-reduced-motion: reduce)'
+            );
             const handleMotionChange = () => {
               get().setReducedMotion(motionQuery.matches);
             };
             motionQuery.addEventListener('change', handleMotionChange);
 
-            return () => motionQuery.removeEventListener('change', handleMotionChange);
+            return () =>
+              motionQuery.removeEventListener('change', handleMotionChange);
           }
         },
       }),

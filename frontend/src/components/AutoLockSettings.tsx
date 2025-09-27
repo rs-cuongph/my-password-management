@@ -32,7 +32,9 @@ export const AutoLockSettings = ({
     setSelectedTimeout(autoLockTimeout);
 
     // Check if current timeout is a preset
-    const isPreset = PRESET_TIMEOUTS.some(preset => preset.value === autoLockTimeout);
+    const isPreset = PRESET_TIMEOUTS.some(
+      (preset) => preset.value === autoLockTimeout
+    );
     setShowCustom(!isPreset && autoLockTimeout > 0);
 
     if (!isPreset && autoLockTimeout > 0) {
@@ -66,17 +68,23 @@ export const AutoLockSettings = ({
 
     if (hours > 0) {
       const remainingMinutes = minutes % 60;
-      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+      return remainingMinutes > 0
+        ? `${hours}h ${remainingMinutes}m`
+        : `${hours}h`;
     } else if (minutes > 0) {
       const remainingSeconds = seconds % 60;
-      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+      return remainingSeconds > 0
+        ? `${minutes}m ${remainingSeconds}s`
+        : `${minutes}m`;
     } else {
       return `${seconds}s`;
     }
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div
+      className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}
+    >
       {showTitle && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -133,7 +141,10 @@ export const AutoLockSettings = ({
               onChange={(e) => setShowCustom(e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="custom-timeout" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="custom-timeout"
+              className="text-sm font-medium text-gray-700"
+            >
               Custom timeout
             </label>
           </div>
@@ -175,8 +186,9 @@ export const AutoLockSettings = ({
                 Security Recommendation
               </h4>
               <p className="text-sm text-yellow-700 mt-1">
-                For maximum security, use a shorter auto-lock timeout. The vault also
-                automatically locks when you switch to another tab or window.
+                For maximum security, use a shorter auto-lock timeout. The vault
+                also automatically locks when you switch to another tab or
+                window.
               </p>
             </div>
           </div>
@@ -189,20 +201,44 @@ export const AutoLockSettings = ({
           </h4>
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 text-green-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               Tab loses focus (switch to another tab/window)
             </div>
             <div className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 text-green-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               Inactivity timeout
             </div>
             <div className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 text-green-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               Manual lock button
             </div>

@@ -25,7 +25,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       select: {
         id: true,
         email: true,
-        username: true,
         isActive: true,
       },
     });
@@ -37,7 +36,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       userId: user.id,
       email: user.email,
-      username: user.username,
     };
   }
 }

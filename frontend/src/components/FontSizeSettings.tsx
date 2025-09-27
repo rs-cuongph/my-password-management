@@ -5,7 +5,9 @@ interface FontSizeSettingsProps {
   className?: string;
 }
 
-export const FontSizeSettings: React.FC<FontSizeSettingsProps> = ({ className }) => {
+export const FontSizeSettings: React.FC<FontSizeSettingsProps> = ({
+  className,
+}) => {
   const { fontSize, setFontSize } = useAppStore();
 
   return (

@@ -13,7 +13,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   variant = 'text',
   width,
   height,
-  animation = 'pulse'
+  animation = 'pulse',
 }) => {
   const getVariantClasses = () => {
     switch (variant) {
@@ -42,8 +42,16 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   };
 
   const styles = {
-    width: width ? (typeof width === 'number' ? `${width}px` : width) : undefined,
-    height: height ? (typeof height === 'number' ? `${height}px` : height) : undefined,
+    width: width
+      ? typeof width === 'number'
+        ? `${width}px`
+        : width
+      : undefined,
+    height: height
+      ? typeof height === 'number'
+        ? `${height}px`
+        : height
+      : undefined,
   };
 
   return (
@@ -130,18 +138,20 @@ export const SkeletonCard: React.FC<{
   lines?: number;
 }> = ({ className = '', showHeader = true, showFooter = false, lines = 3 }) => {
   return (
-    <div className={`p-6 border border-neutral-200 dark:border-neutral-700 rounded-xl ${className}`}>
+    <div
+      className={`p-6 border border-neutral-200 dark:border-neutral-700 rounded-xl ${className}`}
+    >
       {showHeader && (
         <div className="mb-4">
           <SkeletonTitle width="40%" />
           <SkeletonText lines={1} width="80%" />
         </div>
       )}
-      
+
       <div className="space-y-3">
         <SkeletonText lines={lines} />
       </div>
-      
+
       {showFooter && (
         <div className="mt-6 flex gap-3">
           <SkeletonButton width={80} />
@@ -160,7 +170,10 @@ export const SkeletonList: React.FC<{
   return (
     <div className={`space-y-4 ${className}`}>
       {Array.from({ length: items }).map((_, index) => (
-        <div key={index} className="flex items-center gap-4 p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+        <div
+          key={index}
+          className="flex items-center gap-4 p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg"
+        >
           {showAvatar && <SkeletonAvatar />}
           <div className="flex-1">
             <SkeletonTitle width="30%" />
@@ -179,21 +192,29 @@ export const SkeletonTable: React.FC<{
   className?: string;
 }> = ({ rows = 5, columns = 4, className = '' }) => {
   return (
-    <div className={`border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden ${className}`}>
+    <div
+      className={`border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden ${className}`}
+    >
       {/* Header */}
       <div className="bg-neutral-50 dark:bg-neutral-800 p-4 border-b border-neutral-200 dark:border-neutral-700">
-        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+        >
           {Array.from({ length: columns }).map((_, index) => (
             <Skeleton key={index} height="1rem" width="80%" />
           ))}
         </div>
       </div>
-      
+
       {/* Rows */}
       <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="p-4">
-            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+            >
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <Skeleton key={colIndex} height="1rem" width="90%" />
               ))}
@@ -222,14 +243,14 @@ export const VaultLoadingSkeleton: React.FC<{
           <SkeletonButton width={100} />
         </div>
       </div>
-      
+
       {/* Search and filters */}
       <div className="flex gap-4">
         <Skeleton height="40px" className="flex-1" variant="rounded" />
         <SkeletonButton width={80} />
         <SkeletonButton width={60} />
       </div>
-      
+
       {/* Vault entries */}
       <SkeletonList items={8} showAvatar />
     </div>
@@ -246,7 +267,7 @@ export const AuthLoadingSkeleton: React.FC<{
         <SkeletonTitle width="60%" className="mx-auto" />
         <SkeletonText lines={2} className="mx-auto" width="80%" />
       </div>
-      
+
       <div className="space-y-4">
         <div>
           <Skeleton height="1rem" width="25%" className="mb-2" />
@@ -258,7 +279,7 @@ export const AuthLoadingSkeleton: React.FC<{
         </div>
         <SkeletonButton height={48} className="w-full" />
       </div>
-      
+
       <div className="text-center space-y-2">
         <SkeletonText lines={1} width="50%" className="mx-auto" />
         <SkeletonText lines={1} width="40%" className="mx-auto" />
@@ -273,7 +294,7 @@ export const SettingsLoadingSkeleton: React.FC<{
   return (
     <div className={`space-y-8 ${className}`}>
       <SkeletonTitle width="200px" />
-      
+
       {/* Settings sections */}
       {Array.from({ length: 4 }).map((_, index) => (
         <SkeletonCard
@@ -301,9 +322,7 @@ export const LoadingScreen: React.FC<{
   return (
     <div className={`animate-fade-in ${containerClasses} ${className}`}>
       {fullScreen ? (
-        <div className="w-full max-w-4xl px-6">
-          {children}
-        </div>
+        <div className="w-full max-w-4xl px-6">{children}</div>
       ) : (
         children
       )}

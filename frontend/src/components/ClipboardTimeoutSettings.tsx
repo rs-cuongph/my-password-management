@@ -15,11 +15,17 @@ const CLIPBOARD_TIMEOUT_OPTIONS = [
   { value: 5 * 60 * 1000, label: '5 phút' },
 ];
 
-export const ClipboardTimeoutSettings: React.FC<ClipboardTimeoutSettingsProps> = ({ className }) => {
-  const { clipboardAutoClearTimeout, setClipboardAutoClearTimeout } = useAppStore();
+export const ClipboardTimeoutSettings: React.FC<
+  ClipboardTimeoutSettingsProps
+> = ({ className }) => {
+  const { clipboardAutoClearTimeout, setClipboardAutoClearTimeout } =
+    useAppStore();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentOption = CLIPBOARD_TIMEOUT_OPTIONS.find(option => option.value === clipboardAutoClearTimeout) || CLIPBOARD_TIMEOUT_OPTIONS[2];
+  const currentOption =
+    CLIPBOARD_TIMEOUT_OPTIONS.find(
+      (option) => option.value === clipboardAutoClearTimeout
+    ) || CLIPBOARD_TIMEOUT_OPTIONS[2];
 
   const handleOptionSelect = (value: number) => {
     setClipboardAutoClearTimeout(value);
@@ -43,7 +49,12 @@ export const ClipboardTimeoutSettings: React.FC<ClipboardTimeoutSettingsProps> =
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
