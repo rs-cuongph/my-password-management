@@ -5,7 +5,6 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { SecurityService } from './security/security.service';
 import { SecurityExceptionFilter } from './common/filters/security-exception.filter';
-import { SecurityValidationPipe } from './common/pipes/security-validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,14 +12,11 @@ async function bootstrap() {
   const securityService = app.get(SecurityService);
 
   // Security middleware
-  app.use(helmet(securityService.getHelmetConfig()));
+  // app.use(helmet(securityService.getHelmetConfig()));
   app.use(cors(securityService.getCorsConfig()));
 
   // Global exception filter
   app.useGlobalFilters(new SecurityExceptionFilter());
-
-  // Global validation pipe with enhanced security
-  app.useGlobalPipes(new SecurityValidationPipe());
 
   // Set global prefix
   const apiPrefix = configService.get<string>('API_PREFIX') || 'api';

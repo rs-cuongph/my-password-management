@@ -10,12 +10,6 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RecoveryCodeService } from '../services/recovery-code.service';
@@ -29,10 +23,8 @@ import {
   RecoveryCodeStatsResponseDto,
 } from '../dto/recovery-code.dto';
 
-@ApiTags('Recovery Code')
-@Controller('api/v1/security/recovery-code')
+@Controller('security/recovery-code')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class RecoveryCodeController {
   private readonly logger = new Logger(RecoveryCodeController.name);
@@ -49,25 +41,7 @@ export class RecoveryCodeController {
   constructor(private readonly recoveryCodeService: RecoveryCodeService) {}
 
   @Post('generate')
-  @ApiOperation({
-    summary: 'Generate recovery code for DEK',
-    description:
-      'Creates a cryptographically secure recovery code that can be used to recover the DEK without the master password. The recovery code should be stored securely offline.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Recovery code generated successfully',
-    type: GenerateRecoveryCodeResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid DEK provided',
-  })
-  @ApiResponse({
-    status: 429,
-    description: 'Too many recovery code generation requests',
-  })
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 per 5 minutes - very restrictive
+  // @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 per 5 minutes - very restrictive
   async generateRecoveryCode(
     @Body() generateDto: GenerateRecoveryCodeDto,
   ): Promise<GenerateRecoveryCodeResponseDto> {
@@ -117,7 +91,7 @@ export class RecoveryCodeController {
 
       this.logger.log('Recovery code generated successfully');
       return response;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Recovery code generation failed', error);
       throw new HttpException(
         error.message || 'Recovery code generation failed',
@@ -127,25 +101,7 @@ export class RecoveryCodeController {
   }
 
   @Post('validate')
-  @ApiOperation({
-    summary: 'Validate recovery code format and derivation',
-    description:
-      'Validates that a recovery code is properly formatted and can derive a recovery key. Does not unwrap any DEK.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Recovery code validation result',
-    type: ValidateRecoveryCodeResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid recovery code format',
-  })
-  @ApiResponse({
-    status: 429,
-    description: 'Too many validation requests',
-  })
-  @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 per 5 minutes
+  // @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 per 5 minutes
   async validateRecoveryCode(
     @Body() validateDto: ValidateRecoveryCodeDto,
   ): Promise<ValidateRecoveryCodeResponseDto> {
@@ -183,25 +139,7 @@ export class RecoveryCodeController {
   }
 
   @Post('recover-dek')
-  @ApiOperation({
-    summary: 'Recover DEK using recovery code',
-    description:
-      'Uses a recovery code to unwrap and recover the DEK. This is the main recovery flow when the master password is forgotten.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'DEK recovery result',
-    type: RecoverDEKResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid recovery parameters',
-  })
-  @ApiResponse({
-    status: 429,
-    description: 'Too many recovery attempts',
-  })
-  @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 per 15 minutes - very restrictive for security
+  // @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 per 15 minutes - very restrictive for security
   async recoverDEK(
     @Body() recoverDto: RecoverDEKDto,
   ): Promise<RecoverDEKResponseDto> {
@@ -351,18 +289,8 @@ export class RecoveryCodeController {
   }
 
   @Get('stats')
-  @ApiOperation({
-    summary: 'Get recovery code statistics',
-    description:
-      'Returns statistics about recovery code generation and usage for monitoring purposes.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Recovery code statistics',
-    type: RecoveryCodeStatsResponseDto,
-  })
-  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 per minute
-  async getRecoveryCodeStats(): Promise<RecoveryCodeStatsResponseDto> {
+  // @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 per minute
+  getRecoveryCodeStats(): RecoveryCodeStatsResponseDto {
     try {
       const totalAttempts =
         this.stats.successfulRecoveries + this.stats.failedRecoveries;

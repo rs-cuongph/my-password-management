@@ -303,7 +303,7 @@ const HomePage: React.FC = () => {
                   </p>
                   {masterPasswordStatus.isUnlocked && (
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                      {t('home.status.autoLockIn', {
+                      {t('common:home.status.autoLockIn', {
                         minutes: Math.ceil(
                           masterPasswordStatus.timeUntilLock / 1000 / 60
                         ),

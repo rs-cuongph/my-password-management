@@ -64,9 +64,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const shouldShowMasterPage = shouldShowMasterPasswordPage();
 
     // Only redirect to master password page if we should show it AND we're not already there
-    // if (shouldShowMasterPage && location.pathname !== '/master-password') {
-    //   return <Navigate to="/master-password" replace />;
-    // }
+    if (shouldShowMasterPage && location.pathname !== '/master-password') {
+      return <Navigate to="/master-password" replace />;
+    }
 
     // If we're on master password page but shouldn't be there anymore, redirect to home
     if (!shouldShowMasterPage && location.pathname === '/master-password') {

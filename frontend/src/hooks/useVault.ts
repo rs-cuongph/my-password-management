@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  vaultService,
-} from '../services/vaultService';
-import type {
-  VaultSyncStatus,
-  VaultConflict,
-} from '../services/vaultService';
+import { vaultService } from '../services/vaultService';
+import type { VaultSyncStatus, VaultConflict } from '../services/vaultService';
 import type { VaultPayload, PasswordEntry } from '../utils/vaultCrypto';
 import { useMasterPasswordStore } from '../stores/masterPasswordStore';
 
@@ -136,6 +131,7 @@ export const useVault = (): UseVaultReturn => {
         setError(null);
         return entryId;
       } catch (err: any) {
+        console.error('Failed to add entry:', err);
         setError(err.message || 'Failed to add entry');
         return '';
       }

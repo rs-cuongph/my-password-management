@@ -1,5 +1,6 @@
 import { api } from './api';
 import { VaultCryptoService } from '../utils/vaultCrypto';
+import { vaultPayloadService } from './vaultPayloadService';
 import type {
   VaultPayload,
   PasswordEntry,
@@ -43,6 +44,19 @@ export interface VaultSaveResult {
   conflict?: VaultConflict;
 }
 
+export interface VaultVersionCheckResult {
+  currentVersion: number;
+  isUpToDate: boolean;
+  lastUpdated?: string;
+  versionDifference?: number;
+}
+
+export interface VaultServiceConfig {
+  useServerSideCrypto: boolean; // Use VaultPayloadService vs VaultCryptoService
+  autoSave: boolean;
+  autoSaveDelay: number;
+}
+
 class VaultService {
   private readonly baseUrl = '/vault';
   private currentVault: VaultPayload | null = null;
@@ -52,7 +66,29 @@ class VaultService {
     hasUnsavedChanges: false,
   };
   private autoSaveTimer: number | null = null;
-  private readonly AUTO_SAVE_DELAY = 5000; // 5 seconds debounce
+  private isLoadingVault = false;
+  private loadVaultPromise: Promise<VaultLoadResult> | null = null;
+
+  // Configuration with defaults
+  private config: VaultServiceConfig = {
+    useServerSideCrypto: true, // Default to server-side for better security
+    autoSave: true,
+    autoSaveDelay: 5000, // 5 seconds debounce
+  };
+
+  /**
+   * Configure vault service options
+   */
+  configure(config: Partial<VaultServiceConfig>): void {
+    this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Get current configuration
+   */
+  getConfig(): VaultServiceConfig {
+    return { ...this.config };
+  }
 
   /**
    * Load vault from server and decrypt
@@ -61,12 +97,38 @@ class VaultService {
     masterPassword: string,
     kdfParams: KDFParams
   ): Promise<VaultLoadResult> {
+    // If already loading, return the existing promise
+    if (this.isLoadingVault && this.loadVaultPromise) {
+      return this.loadVaultPromise;
+    }
+
+    // If vault is already loaded and not stale, return cached result
+    if (this.currentVault && this.syncStatus.status === 'saved') {
+      return { vault: this.currentVault };
+    }
+
+    this.isLoadingVault = true;
+    this.loadVaultPromise = this._loadVaultInternal(masterPassword, kdfParams);
+
+    try {
+      const result = await this.loadVaultPromise;
+      return result;
+    } finally {
+      this.isLoadingVault = false;
+      this.loadVaultPromise = null;
+    }
+  }
+
+  private async _loadVaultInternal(
+    masterPassword: string,
+    kdfParams: KDFParams
+  ): Promise<VaultLoadResult> {
     try {
       this.setSyncStatus({ status: 'syncing' });
 
       const response = await api.get(`${this.baseUrl}`);
 
-      if (response.status === 204) {
+      if (!response) {
         // No vault exists yet, create empty one
         const emptyVault = VaultCryptoService.createEmptyVault();
         this.currentVault = emptyVault;
@@ -81,13 +143,15 @@ class VaultService {
 
       const serverData: ServerVaultData = response.data;
 
-      // Decrypt vault
-      const decryptResult = await VaultCryptoService.decryptVaultWithPassword(
-        serverData.encryptedPayload,
-        serverData.wrappedDEK,
-        masterPassword,
-        kdfParams
-      );
+      // Decrypt vault using configured crypto method
+      const decryptResult = this.config.useServerSideCrypto
+        ? await this.decryptVaultServerSide(serverData, masterPassword, kdfParams)
+        : await VaultCryptoService.decryptVaultWithPassword(
+            serverData.encryptedPayload,
+            serverData.wrappedDEK,
+            masterPassword,
+            kdfParams
+          );
 
       this.currentVault = decryptResult.payload;
       this.setSyncStatus({
@@ -128,12 +192,14 @@ class VaultService {
     try {
       this.setSyncStatus({ status: 'saving' });
 
-      // Encrypt vault
-      const encryptResult = await VaultCryptoService.encryptVaultWithPassword(
-        this.currentVault,
-        masterPassword,
-        kdfParams
-      );
+      // Encrypt vault using configured crypto method
+      const encryptResult = this.config.useServerSideCrypto
+        ? await this.encryptVaultServerSide(this.currentVault, masterPassword, kdfParams)
+        : await VaultCryptoService.encryptVaultWithPassword(
+            this.currentVault,
+            masterPassword,
+            kdfParams
+          );
 
       // Save to server
       const response = await api.post(`${this.baseUrl}`, {
@@ -299,7 +365,7 @@ class VaultService {
 
     this.autoSaveTimer = setTimeout(() => {
       this.autoSave();
-    }, this.AUTO_SAVE_DELAY);
+    }, this.config.autoSaveDelay);
   }
 
   /**
@@ -333,13 +399,15 @@ class VaultService {
     conflict: VaultConflict
   ): Promise<VaultSaveResult> {
     if (choice === 'server') {
-      // Accept server version
-      const decryptResult = await VaultCryptoService.decryptVaultWithPassword(
-        conflict.serverData.encryptedPayload,
-        conflict.serverData.wrappedDEK,
-        masterPassword,
-        kdfParams
-      );
+      // Accept server version - decrypt using configured crypto method
+      const decryptResult = this.config.useServerSideCrypto
+        ? await this.decryptVaultServerSide(conflict.serverData, masterPassword, kdfParams)
+        : await VaultCryptoService.decryptVaultWithPassword(
+            conflict.serverData.encryptedPayload,
+            conflict.serverData.wrappedDEK,
+            masterPassword,
+            kdfParams
+          );
 
       this.currentVault = decryptResult.payload;
       this.setSyncStatus({
@@ -398,6 +466,8 @@ class VaultService {
    */
   clearVault(): void {
     this.currentVault = null;
+    this.isLoadingVault = false;
+    this.loadVaultPromise = null;
     if (this.autoSaveTimer) {
       clearTimeout(this.autoSaveTimer);
       this.autoSaveTimer = null;
@@ -419,6 +489,168 @@ class VaultService {
     window.dispatchEvent(
       new CustomEvent('vault-sync-status-change', { detail: this.syncStatus })
     );
+  }
+
+  /**
+   * Check vault version against server
+   */
+  async checkVaultVersion(
+    clientVersion?: number
+  ): Promise<VaultVersionCheckResult> {
+    try {
+      const params = clientVersion ? { clientVersion } : {};
+      const response = await api.get(`${this.baseUrl}/version`, { params });
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 401) {
+        throw new Error('Authentication required');
+      }
+      throw new Error(
+        error.response?.data?.message || 'Failed to check vault version'
+      );
+    }
+  }
+
+  /**
+   * Check if local vault is out of sync with server
+   */
+  async isVaultOutOfSync(): Promise<{
+    outOfSync: boolean;
+    serverVersion?: number;
+    localVersion: number;
+    shouldUpdate: boolean;
+  }> {
+    try {
+      const versionCheck = await this.checkVaultVersion(
+        this.syncStatus.localVersion
+      );
+
+      const outOfSync = !versionCheck.isUpToDate;
+      const shouldUpdate = versionCheck.versionDifference
+        ? versionCheck.versionDifference > 0
+        : false;
+
+      this.setSyncStatus({
+        serverVersion: versionCheck.currentVersion,
+      });
+
+      return {
+        outOfSync,
+        serverVersion: versionCheck.currentVersion,
+        localVersion: this.syncStatus.localVersion,
+        shouldUpdate,
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to check sync status');
+    }
+  }
+
+  /**
+   * Force sync check and update status
+   */
+  async forceSyncCheck(): Promise<void> {
+    try {
+      const syncStatus = await this.isVaultOutOfSync();
+
+      if (syncStatus.outOfSync) {
+        this.setSyncStatus({
+          status: 'conflict',
+          serverVersion: syncStatus.serverVersion,
+        });
+      } else {
+        this.setSyncStatus({
+          status: 'saved',
+          serverVersion: syncStatus.serverVersion,
+        });
+      }
+    } catch (error) {
+      this.setSyncStatus({
+        status: 'error',
+        error: 'Failed to check sync status',
+      });
+    }
+  }
+
+  /**
+   * Server-side decryption using VaultPayloadService
+   */
+  private async decryptVaultServerSide(
+    serverData: ServerVaultData,
+    masterPassword: string,
+    kdfParams: KDFParams
+  ): Promise<{ payload: VaultPayload }> {
+    try {
+      const salt = kdfParams.salt;
+
+      const result = await vaultPayloadService.decryptVaultWithPassword({
+        encryptedPayload: {
+          encryptedData: serverData.encryptedPayload.encryptedData,
+          nonce: serverData.encryptedPayload.nonce,
+          tag: serverData.encryptedPayload.tag,
+          compressed: serverData.encryptedPayload.compressed,
+          checksum: serverData.checksum,
+          createdAt: serverData.lastModified.toISOString(),
+        },
+        wrappedDEK: typeof serverData.wrappedDEK === 'string'
+          ? serverData.wrappedDEK
+          : JSON.stringify(serverData.wrappedDEK),
+        password: masterPassword,
+        salt,
+        options: {
+          verifyIntegrity: true,
+          kdfParams: {
+            opsLimit: kdfParams.time, // Map time to opsLimit
+            memLimit: kdfParams.memory, // Map memory to memLimit
+            algorithm: 2, // Argon2id algorithm ID
+          },
+        },
+      });
+
+      return {
+        payload: vaultPayloadService.convertApiResponseToVaultPayload(result.payload),
+      };
+    } catch (error) {
+      throw new Error(
+        `Server-side decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Server-side encryption using VaultPayloadService
+   */
+  private async encryptVaultServerSide(
+    vault: VaultPayload,
+    masterPassword: string,
+    kdfParams: KDFParams
+  ): Promise<{ encryptedPayload: any; wrappedDEK: any }> {
+    try {
+      const salt = kdfParams.salt;
+
+      const result = await vaultPayloadService.encryptVaultWithPassword({
+        payload: vaultPayloadService.convertVaultPayloadToApiFormat(vault),
+        password: masterPassword,
+        salt,
+        options: {
+          compression: true,
+          integrity: true,
+          kdfParams: {
+            opsLimit: kdfParams.time, // Map time to opsLimit
+            memLimit: kdfParams.memory, // Map memory to memLimit
+            algorithm: 2, // Argon2id algorithm ID
+          },
+        },
+      });
+
+      return {
+        encryptedPayload: result.encryptedPayload,
+        wrappedDEK: result.wrappedDEK,
+      };
+    } catch (error) {
+      throw new Error(
+        `Server-side encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 
   /**

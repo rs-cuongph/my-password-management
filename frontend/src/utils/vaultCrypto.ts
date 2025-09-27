@@ -1,4 +1,5 @@
-import { deriveMasterKey, type KDFParams } from './crypto';
+import type { KDFParams } from './crypto';
+import { vaultPayloadService } from '../services/vaultPayloadService';
 
 export interface VaultEntry {
   id: string;
@@ -54,8 +55,8 @@ export interface VaultBoard {
 export interface VaultMetadata {
   version: string;
   lastSyncAt: Date;
-  entryCount: number;
-  boardCount: number;
+  entriesCount: number;
+  boardsCount: number;
   checksum?: string;
   syncId?: string;
 }
@@ -114,10 +115,9 @@ export interface VaultEncryptionStats {
 
 /**
  * Vault Crypto Service for client-side vault operations
+ * Now uses VaultPayloadService for API calls
  */
 export class VaultCryptoService {
-  private static readonly API_BASE = '/security/vault-payload';
-
   /**
    * Encrypt vault payload with password
    */
@@ -128,38 +128,42 @@ export class VaultCryptoService {
     options: VaultEncryptionOptions = {}
   ): Promise<VaultEncryptionResult> {
     try {
-      // Derive master key from password
-      await deriveMasterKey(password, kdfParams.salt);
-
-      // Convert master key to base64 for API
+      // Convert salt to base64 if it's not already
       const salt = kdfParams.salt;
 
-      const response = await fetch(`${this.API_BASE}/encrypt-with-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.getAuthToken()}`,
+      // Use VaultPayloadService for API call
+      const result = await vaultPayloadService.encryptVaultWithPassword({
+        payload: vaultPayloadService.convertVaultPayloadToApiFormat(payload),
+        password,
+        salt,
+        options: {
+          compression: options.compress,
+          integrity: true,
+          kdfParams: {
+            opsLimit: kdfParams.time, // Map time to opsLimit
+            memLimit: kdfParams.memory, // Map memory to memLimit
+            algorithm: 2, // Argon2id algorithm ID
+          },
         },
-        body: JSON.stringify({
-          payload: this.serializePayload(payload),
-          password,
-          salt,
-          options,
-        }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Encryption failed');
-      }
-
-      const result = await response.json();
       return {
         encryptedPayload: this.deserializeEncryptedPayload(
           result.encryptedPayload
         ),
         wrappedDEK: result.wrappedDEK,
-        stats: result.stats,
+        stats: {
+          originalSize: result.stats.originalSize,
+          compressedSize: result.stats.compressionRatio
+            ? Math.round(
+                result.stats.originalSize * result.stats.compressionRatio
+              )
+            : undefined,
+          encryptedSize: result.stats.encryptedSize,
+          compressionRatio: result.stats.compressionRatio,
+          encryptionTime: result.stats.encryptionTime,
+          compressed: result.stats.compressed,
+        },
       };
     } catch (error) {
       throw new Error(
@@ -179,32 +183,35 @@ export class VaultCryptoService {
     options: VaultDecryptionOptions = {}
   ): Promise<VaultDecryptionResult> {
     try {
-      const response = await fetch(`${this.API_BASE}/decrypt-with-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.getAuthToken()}`,
+      // Convert salt to base64 if it's not already
+      const salt = kdfParams.salt;
+
+      // Use VaultPayloadService for API call
+      const result = await vaultPayloadService.decryptVaultWithPassword({
+        encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
+        wrappedDEK:
+          typeof wrappedDEK === 'string'
+            ? wrappedDEK
+            : JSON.stringify(wrappedDEK),
+        password,
+        salt,
+        options: {
+          verifyIntegrity: options.strictValidation,
+          kdfParams: {
+            opsLimit: kdfParams.time, // Map time to opsLimit
+            memLimit: kdfParams.memory, // Map memory to memLimit
+            algorithm: 2, // Argon2id algorithm ID
+          },
         },
-        body: JSON.stringify({
-          encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
-          wrappedDEK,
-          password,
-          salt: kdfParams.salt,
-          options,
-        }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Decryption failed');
-      }
-
-      const result = await response.json();
       return {
-        payload: this.deserializePayload(result.payload),
-        compressionRatio: result.compressionRatio,
-        decryptionTime: result.decryptionTime,
-        warnings: result.warnings,
+        payload: vaultPayloadService.convertApiResponseToVaultPayload(
+          result.payload
+        ),
+        compressionRatio: result.stats.compressionRatio,
+        decryptionTime: result.stats.decryptionTime,
+        warnings: result.stats.warnings,
       };
     } catch (error) {
       throw new Error(
@@ -220,24 +227,23 @@ export class VaultCryptoService {
     encryptedPayload: EncryptedVaultPayload
   ): Promise<VaultEncryptionStats> {
     try {
-      const response = await fetch(`${this.API_BASE}/stats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
-        }),
+      // Use VaultPayloadService for API call
+      const result = await vaultPayloadService.getVaultStats({
+        encryptedPayload: this.serializeEncryptedPayload(encryptedPayload),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to get stats');
-      }
-
-      const result = await response.json();
-      return result.stats;
+      return {
+        originalSize: result.stats.originalSize,
+        compressedSize: result.stats.compressionRatio
+          ? Math.round(
+              result.stats.originalSize * result.stats.compressionRatio
+            )
+          : undefined,
+        encryptedSize: result.stats.encryptedSize,
+        compressionRatio: result.stats.compressionRatio,
+        encryptionTime: result.stats.encryptionTime,
+        compressed: result.stats.compressed,
+      };
     } catch (error) {
       throw new Error(
         `Failed to get vault stats: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -271,8 +277,8 @@ export class VaultCryptoService {
       metadata: {
         version: '1.0.0',
         lastSyncAt: now,
-        entryCount: 0,
-        boardCount: 1,
+        entriesCount: 0,
+        boardsCount: 1,
         syncId: crypto.randomUUID(),
       },
     };
@@ -298,7 +304,7 @@ export class VaultCryptoService {
       passwordEntries: [...(vault.passwordEntries || []), newEntry],
       metadata: {
         ...vault.metadata,
-        entryCount:
+        entriesCount:
           vault.entries.length + (vault.passwordEntries?.length || 0) + 1,
         lastSyncAt: now,
       },
@@ -345,7 +351,7 @@ export class VaultCryptoService {
       passwordEntries,
       metadata: {
         ...vault.metadata,
-        entryCount: vault.entries.length + passwordEntries.length,
+        entriesCount: vault.entries.length + passwordEntries.length,
         lastSyncAt: now,
       },
     };
@@ -371,7 +377,7 @@ export class VaultCryptoService {
       entries: [...vault.entries, newEntry],
       metadata: {
         ...vault.metadata,
-        entryCount: vault.entries.length + 1,
+        entriesCount: vault.entries.length + 1,
         lastSyncAt: now,
       },
     };
@@ -412,7 +418,7 @@ export class VaultCryptoService {
       entries,
       metadata: {
         ...vault.metadata,
-        entryCount: entries.length,
+        entriesCount: entries.length,
         lastSyncAt: now,
       },
     };
@@ -438,7 +444,7 @@ export class VaultCryptoService {
       boards: [...vault.boards, newBoard],
       metadata: {
         ...vault.metadata,
-        boardCount: vault.boards.length + 1,
+        boardsCount: vault.boards.length + 1,
         lastSyncAt: now,
       },
     };
@@ -479,7 +485,7 @@ export class VaultCryptoService {
       boards,
       metadata: {
         ...vault.metadata,
-        boardCount: boards.length,
+        boardsCount: boards.length,
         lastSyncAt: now,
       },
     };
@@ -506,8 +512,8 @@ export class VaultCryptoService {
     if (
       !metadata.version ||
       !metadata.lastSyncAt ||
-      typeof metadata.entryCount !== 'number' ||
-      typeof metadata.boardCount !== 'number'
+      typeof metadata.entriesCount !== 'number' ||
+      typeof metadata.boardsCount !== 'number'
     ) {
       return false;
     }
@@ -601,61 +607,6 @@ export class VaultCryptoService {
   }
 
   // Private helper methods
-  private static serializePayload(payload: VaultPayload): any {
-    return {
-      ...payload,
-      entries: payload.entries.map((entry) => ({
-        ...entry,
-        dueDate: entry.dueDate?.toISOString(),
-        createdAt: entry.createdAt.toISOString(),
-        updatedAt: entry.updatedAt.toISOString(),
-      })),
-      passwordEntries:
-        payload.passwordEntries?.map((entry) => ({
-          ...entry,
-          createdAt: entry.createdAt.toISOString(),
-          updatedAt: entry.updatedAt.toISOString(),
-          lastUsed: entry.lastUsed?.toISOString(),
-        })) || [],
-      boards: payload.boards.map((board) => ({
-        ...board,
-        createdAt: board.createdAt.toISOString(),
-        updatedAt: board.updatedAt.toISOString(),
-      })),
-      metadata: {
-        ...payload.metadata,
-        lastSyncAt: payload.metadata.lastSyncAt.toISOString(),
-      },
-    };
-  }
-
-  private static deserializePayload(payload: any): VaultPayload {
-    return {
-      ...payload,
-      entries: payload.entries.map((entry: any) => ({
-        ...entry,
-        dueDate: entry.dueDate ? new Date(entry.dueDate) : undefined,
-        createdAt: new Date(entry.createdAt),
-        updatedAt: new Date(entry.updatedAt),
-      })),
-      passwordEntries:
-        payload.passwordEntries?.map((entry: any) => ({
-          ...entry,
-          createdAt: new Date(entry.createdAt),
-          updatedAt: new Date(entry.updatedAt),
-          lastUsed: entry.lastUsed ? new Date(entry.lastUsed) : undefined,
-        })) || [],
-      boards: payload.boards.map((board: any) => ({
-        ...board,
-        createdAt: new Date(board.createdAt),
-        updatedAt: new Date(board.updatedAt),
-      })),
-      metadata: {
-        ...payload.metadata,
-        lastSyncAt: new Date(payload.metadata.lastSyncAt),
-      },
-    };
-  }
 
   private static serializeEncryptedPayload(
     encryptedPayload: EncryptedVaultPayload
@@ -673,16 +624,5 @@ export class VaultCryptoService {
       ...encryptedPayload,
       createdAt: new Date(encryptedPayload.createdAt),
     };
-  }
-
-  private static getAuthToken(): string {
-    // Get token from your auth store/context
-    // This is a placeholder - implement according to your auth system
-    const token =
-      localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return token;
   }
 }

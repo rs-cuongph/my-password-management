@@ -52,16 +52,17 @@ export class VaultService {
           memorySize: number;
           parallelism: number;
         },
-        wrappedDek: vault.wrappedDek,
-        blobCiphertext: JSON.parse(
+        wrappedDEK: vault.wrappedDek,
+        encryptedPayload: JSON.parse(
           vault.blobCiphertext,
         ) as EncryptedVaultPayloadDto,
         version: vault.version,
         lastUpdated: vault.lastUpdated?.toISOString(),
         metadata: {
-          entryCount: 0,
-          boardCount: 0,
-          checksum: undefined,
+          entriesCount: 0,
+          boardsCount: 0,
+          lastSyncAt:
+            vault.lastUpdated?.toISOString() || new Date().toISOString(),
         },
       };
     } catch (error: unknown) {
@@ -88,15 +89,15 @@ export class VaultService {
       // Increment version
       const newVersion = previousVersion + 1;
 
-      // Calculate metadata
-      const sizeInBytes = this.calculateVaultSize(vaultData.blobCiphertext);
-      const compressionUsed = vaultData.blobCiphertext.compressed;
+      // Calculate metadata (for future use)
+      // const sizeInBytes = this.calculateVaultSize(vaultData.blobCiphertext);
+      // const compressionUsed = vaultData.blobCiphertext.compressed;
 
       // Save vault data
       await this.upsertVault(userId, {
         kdfJson: JSON.stringify(vaultData.kdfJson),
-        wrappedDek: vaultData.wrappedDek,
-        blobCiphertext: JSON.stringify(vaultData.blobCiphertext),
+        wrappedDek: vaultData.wrappedDEK, // Map from wrappedDEK to wrappedDek for database
+        blobCiphertext: JSON.stringify(vaultData.encryptedPayload), // Map from encryptedPayload to blobCiphertext for database
         version: newVersion,
       });
 
@@ -113,9 +114,9 @@ export class VaultService {
         savedAt: new Date().toISOString(),
         versionConflictWarning,
         metadata: {
-          previousVersion,
-          sizeInBytes,
-          compressionUsed,
+          entriesCount: 0,
+          boardsCount: 0,
+          lastSyncAt: new Date().toISOString(),
         },
       };
     } catch (error: unknown) {
@@ -164,10 +165,10 @@ export class VaultService {
    */
   validateVaultSize(vaultData: SaveVaultRequestDto): void {
     const encryptedDataSize = Buffer.from(
-      vaultData.blobCiphertext.encryptedData,
+      vaultData.encryptedPayload.encryptedData,
       'base64',
     ).length;
-    const totalSize = this.calculateVaultSize(vaultData.blobCiphertext);
+    const totalSize = this.calculateVaultSize(vaultData.encryptedPayload);
 
     if (totalSize > this.MAX_VAULT_SIZE) {
       throw new HttpException(
@@ -184,15 +185,21 @@ export class VaultService {
     }
 
     // Validate ciphertext format
-    this.validateCiphertextFormat(vaultData.blobCiphertext);
+    this.validateCiphertextFormat(vaultData.encryptedPayload);
   }
 
   /**
    * Validate ciphertext format and structure
    */
-  private validateCiphertextFormat(ciphertext: EncryptedVaultPayloadDto): void {
+  private validateCiphertextFormat(
+    encryptedPayload: EncryptedVaultPayloadDto,
+  ): void {
     // Validate required fields
-    if (!ciphertext.encryptedData || !ciphertext.nonce || !ciphertext.tag) {
+    if (
+      !encryptedPayload.encryptedData ||
+      !encryptedPayload.nonce ||
+      !encryptedPayload.tag
+    ) {
       throw new HttpException(
         'Invalid ciphertext: missing required fields',
         HttpStatus.BAD_REQUEST,
@@ -201,9 +208,9 @@ export class VaultService {
 
     // Validate base64 encoding
     try {
-      Buffer.from(ciphertext.encryptedData, 'base64');
-      Buffer.from(ciphertext.nonce, 'base64');
-      Buffer.from(ciphertext.tag, 'base64');
+      Buffer.from(encryptedPayload.encryptedData, 'base64');
+      Buffer.from(encryptedPayload.nonce, 'base64');
+      Buffer.from(encryptedPayload.tag, 'base64');
     } catch {
       throw new HttpException(
         'Invalid ciphertext: invalid base64 encoding',
@@ -212,7 +219,7 @@ export class VaultService {
     }
 
     // Validate nonce size (24 bytes for XChaCha20)
-    const nonceBuffer = Buffer.from(ciphertext.nonce, 'base64');
+    const nonceBuffer = Buffer.from(encryptedPayload.nonce, 'base64');
     if (nonceBuffer.length !== 24) {
       throw new HttpException(
         `Invalid nonce size: expected 24 bytes, got ${nonceBuffer.length}`,
@@ -221,7 +228,7 @@ export class VaultService {
     }
 
     // Validate tag size (16 bytes for Poly1305)
-    const tagBuffer = Buffer.from(ciphertext.tag, 'base64');
+    const tagBuffer = Buffer.from(encryptedPayload.tag, 'base64');
     if (tagBuffer.length !== 16) {
       throw new HttpException(
         `Invalid tag size: expected 16 bytes, got ${tagBuffer.length}`,
@@ -230,15 +237,15 @@ export class VaultService {
     }
 
     // Validate algorithm
-    if (ciphertext.algorithm !== 'xchacha20-poly1305') {
+    if (encryptedPayload.algorithm !== 'xchacha20-poly1305') {
       throw new HttpException(
-        `Unsupported algorithm: ${String(ciphertext.algorithm)}`,
+        `Unsupported algorithm: ${String(encryptedPayload.algorithm)}`,
         HttpStatus.BAD_REQUEST,
       );
     }
 
     // Validate version
-    if (!ciphertext.version || ciphertext.version < 1) {
+    if (!encryptedPayload.version || encryptedPayload.version < 1) {
       throw new HttpException(
         'Invalid encryption version',
         HttpStatus.BAD_REQUEST,
@@ -249,20 +256,22 @@ export class VaultService {
   /**
    * Calculate total vault size in bytes
    */
-  private calculateVaultSize(ciphertext: EncryptedVaultPayloadDto): number {
+  private calculateVaultSize(
+    encryptedPayload: EncryptedVaultPayloadDto,
+  ): number {
     const encryptedData = Buffer.from(
-      ciphertext.encryptedData,
+      encryptedPayload.encryptedData,
       'base64',
     ).length;
-    const nonce = Buffer.from(ciphertext.nonce, 'base64').length;
-    const tag = Buffer.from(ciphertext.tag, 'base64').length;
+    const nonce = Buffer.from(encryptedPayload.nonce, 'base64').length;
+    const tag = Buffer.from(encryptedPayload.tag, 'base64').length;
 
     // Add some overhead for metadata
     const metadataOverhead = JSON.stringify({
-      algorithm: ciphertext.algorithm,
-      version: ciphertext.version,
-      compressed: ciphertext.compressed,
-      createdAt: ciphertext.createdAt,
+      algorithm: encryptedPayload.algorithm,
+      version: encryptedPayload.version,
+      compressed: encryptedPayload.compressed,
+      createdAt: encryptedPayload.createdAt,
     }).length;
 
     return encryptedData + nonce + tag + metadataOverhead;

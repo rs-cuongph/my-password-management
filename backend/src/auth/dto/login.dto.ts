@@ -13,7 +13,8 @@ export class LoginDto {
 
 export class LoginResponseDto {
   success: boolean;
-  tempToken?: string;
+  tempToken?: string; // For 2FA verification
+  accessToken?: string; // For direct login (no 2FA)
   need2fa: boolean;
   kdfSalt: string;
   message?: string;

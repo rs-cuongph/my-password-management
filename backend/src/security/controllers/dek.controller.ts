@@ -30,7 +30,7 @@ export class DEKController {
 
   @Post('generate')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async generateDEK(
     @Body() request: GenerateDEKRequestDto,
   ): Promise<GenerateDEKResponseDto> {
@@ -58,7 +58,7 @@ export class DEKController {
 
   @Post('wrap')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async wrapDEK(
     @Body() request: WrapDEKRequestDto,
   ): Promise<WrapDEKResponseDto> {
@@ -99,7 +99,7 @@ export class DEKController {
 
   @Post('unwrap')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async unwrapDEK(
     @Body() request: UnwrapDEKRequestDto,
   ): Promise<UnwrapDEKResponseDto> {
@@ -147,9 +147,9 @@ export class DEKController {
 
   @Post('rotation-info')
   @HttpCode(HttpStatus.OK)
-  async getKeyRotationInfo(
+  getKeyRotationInfo(
     @Body() request: GetKeyRotationInfoRequestDto,
-  ): Promise<GetKeyRotationInfoResponseDto> {
+  ): GetKeyRotationInfoResponseDto {
     // Convert DTOs to interfaces
     const wrappedDEKs = request.wrappedDEKs.map((dek) => ({
       encryptedDEK: dek.encryptedDEK,
@@ -176,7 +176,7 @@ export class DEKController {
 
   @Post('rotate')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async rotateDEK(
     @Body() request: RotateDEKRequestDto,
   ): Promise<RotateDEKResponseDto> {
@@ -233,7 +233,7 @@ export class DEKController {
 
   @Get('master-key/generate')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async generateMasterKey(): Promise<{ masterKey: string }> {
     const masterKey = await this.dekService.generateMasterKey();
 
@@ -249,7 +249,7 @@ export class DEKController {
 
   @Post('master-key/derive')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit()
+  // @SensitiveRateLimit()
   async deriveMasterKey(
     @Body() request: { password: string; salt?: string },
   ): Promise<{ masterKey: string; salt: string }> {

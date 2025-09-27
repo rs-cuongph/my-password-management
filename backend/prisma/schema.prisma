@@ -27,7 +27,6 @@ model User {
   // Relations
   vaults        UserVault[]
   recoveryCodes RecoveryCode[]
-  sessions      Session[]
 
   @@map("users")
 }
@@ -60,18 +59,4 @@ model RecoveryCode {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("recovery_codes")
-}
-
-model Session {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  tokenHash  String // Hashed session token
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  lastUsedAt DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
 }

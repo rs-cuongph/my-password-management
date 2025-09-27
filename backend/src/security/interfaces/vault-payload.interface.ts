@@ -16,6 +16,21 @@ export interface VaultEntry {
   metadata?: Record<string, any>; // Extensible metadata for future features
 }
 
+export interface PasswordEntry {
+  id: string;
+  site: string;
+  username: string;
+  password: string;
+  hint?: string;
+  url?: string;
+  notes?: string;
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  lastUsed?: Date;
+  metadata?: Record<string, any>;
+}
+
 export interface VaultBoard {
   id: string;
   name: string;
@@ -33,14 +48,15 @@ export interface VaultBoard {
 export interface VaultMetadata {
   version: string;
   lastSyncAt: Date;
-  entryCount: number;
-  boardCount: number;
+  entriesCount: number;
+  boardsCount: number;
   checksum?: string; // Optional integrity check
   syncId?: string; // For synchronization tracking
 }
 
 export interface VaultPayload {
   entries: VaultEntry[];
+  passwordEntries?: PasswordEntry[];
   boards: VaultBoard[];
   metadata: VaultMetadata;
 }

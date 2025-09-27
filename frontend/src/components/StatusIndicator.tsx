@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, Check } from 'lucide-react';
 
 export type StatusType =
   | 'idle'
@@ -31,21 +32,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
     switch (status) {
       case 'saving':
         return {
-          icon: (
-            <svg
-              className="status-spin"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          ),
+          icon: <Loader2 className="status-spin" />,
           color: 'text-primary-600 dark:text-primary-400',
           bgColor: 'bg-primary-50 dark:bg-primary-950',
           borderColor: 'border-primary-200 dark:border-primary-800',
@@ -53,21 +40,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         };
       case 'syncing':
         return {
-          icon: (
-            <svg
-              className="status-spin"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          ),
+          icon: <Loader2 className="status-spin" />,
           color: 'text-secondary-600 dark:text-secondary-400',
           bgColor: 'bg-secondary-50 dark:bg-secondary-950',
           borderColor: 'border-secondary-200 dark:border-secondary-800',
@@ -75,16 +48,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         };
       case 'success':
         return {
-          icon: (
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          ),
+          icon: <CheckCircle />,
           color: 'text-success-600 dark:text-success-400',
           bgColor: 'bg-success-50 dark:bg-success-950',
           borderColor: 'border-success-200 dark:border-success-800',
@@ -92,16 +56,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         };
       case 'error':
         return {
-          icon: (
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ),
+          icon: <XCircle />,
           color: 'text-error-600 dark:text-error-400',
           bgColor: 'bg-error-50 dark:bg-error-950',
           borderColor: 'border-error-200 dark:border-error-800',
@@ -109,16 +64,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         };
       case 'warning':
         return {
-          icon: (
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          ),
+          icon: <AlertTriangle />,
           color: 'text-warning-600 dark:text-warning-400',
           bgColor: 'bg-warning-50 dark:bg-warning-950',
           borderColor: 'border-warning-200 dark:border-warning-800',
@@ -127,16 +73,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       case 'idle':
       default:
         return {
-          icon: (
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          ),
+          icon: <Check />,
           color: 'text-neutral-500 dark:text-neutral-400',
           bgColor: 'bg-neutral-50 dark:bg-neutral-900',
           borderColor: 'border-neutral-200 dark:border-neutral-700',

@@ -16,10 +16,11 @@ export const VaultPage: React.FC = () => {
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
 
   const { masterPassword, kdfParams } = useMasterPasswordStore();
-  const { user } = useAuthStore();
+  const { user, token, isAuthenticated } = useAuthStore();
 
   // Use vault hook for all vault operations
   const {
+    vault,
     entries,
     isLoadingVault,
     syncStatus,
@@ -36,12 +37,18 @@ export const VaultPage: React.FC = () => {
 
   // Load vault data on mount
   useEffect(() => {
-    if (masterPassword && kdfParams) {
+    if (masterPassword && kdfParams && isAuthenticated) {
       loadVault();
     }
-  }, [masterPassword, kdfParams, loadVault]);
+  }, [masterPassword, kdfParams, isAuthenticated, loadVault]);
 
   const handleAddEntry = () => {
+    // Check if vault is loaded
+    if (!vault) {
+      console.error('Cannot add entry: Vault not loaded');
+      return;
+    }
+
     setEditingEntry(undefined);
     setIsFormOpen(true);
   };
@@ -55,12 +62,23 @@ export const VaultPage: React.FC = () => {
     entryData: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
     try {
+      console.log('handleSaveEntry called with:', entryData);
+
+      // Check if vault is loaded
+      if (!vault) {
+        console.error('Cannot save entry: Vault not loaded');
+        return;
+      }
+
       if (editingEntry) {
         // Update existing entry
+        console.log('Updating existing entry:', editingEntry.id);
         updateEntry(editingEntry.id, entryData);
       } else {
         // Add new entry
-        addEntry(entryData);
+        console.log('Adding new entry');
+        const entryId = addEntry(entryData);
+        console.log('New entry ID:', entryId);
       }
 
       setIsFormOpen(false);
@@ -118,6 +136,34 @@ export const VaultPage: React.FC = () => {
       setIsResolvingConflict(false);
     }
   };
+
+  // Show loading if not authenticated yet
+  if (!isAuthenticated || !token) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center animate-pulse-soft">
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <p className="text-neutral-600 dark:text-neutral-400 text-lg">
+            Đang xác thực...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoadingVault) {
@@ -320,6 +366,7 @@ export const VaultPage: React.FC = () => {
         onEditEntry={handleEditEntry}
         onDeleteEntry={handleDeleteEntry}
         onCopyPassword={handleCopyPassword}
+        isVaultLoaded={!!vault}
       />
 
       {/* Entry Form Modal */}

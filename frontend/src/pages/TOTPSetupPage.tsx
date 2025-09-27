@@ -30,8 +30,8 @@ const TOTPSetupPage: React.FC<TOTPSetupPageProps> = ({ tempToken }) => {
       { tempToken },
       {
         onSuccess: (response) => {
-          setQrCodeData(response.data.qrCode || '');
-          setOtpauthUri(response.data.otpauthUri);
+          setQrCodeData(response.qrCode || '');
+          setOtpauthUri(response.otpauthUri);
         },
         onError: (error: any) => {
           if (error?.response?.data?.message) {

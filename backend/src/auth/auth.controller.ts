@@ -5,22 +5,18 @@ import {
   Body,
   HttpStatus,
   HttpCode,
-  Req,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { Setup2faDto, Setup2faResponseDto } from './dto/setup-2fa.dto';
 import { Verify2faDto, Verify2faResponseDto } from './dto/verify-2fa.dto';
+import { UserProfileDto } from './dto/user-profile.dto';
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
-import {
-  SensitiveRateLimit,
-  StrictRateLimit,
-} from '../common/decorators/rate-limit.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +25,7 @@ export class AuthController {
   @Post('register')
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 attempts per 5 minutes per IP
+  // @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 attempts per 5 minutes per IP
   async register(
     @Body() registerDto: RegisterDto,
   ): Promise<RegisterResponseDto> {
@@ -39,14 +35,14 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute per IP
+  // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute per IP
   async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
     return this.authService.login(loginDto);
   }
 
   @Post('setup-2fa')
   @HttpCode(HttpStatus.OK)
-  @StrictRateLimit() // 3 attempts per 15 minutes
+  // @StrictRateLimit() // 3 attempts per 15 minutes
   async setup2fa(
     @Body() setup2faDto: Setup2faDto,
   ): Promise<Setup2faResponseDto> {
@@ -55,20 +51,29 @@ export class AuthController {
 
   @Post('verify-2fa')
   @HttpCode(HttpStatus.OK)
-  @SensitiveRateLimit() // 5 attempts per 15 minutes
+  // @SensitiveRateLimit() // 5 attempts per 15 minutes
   async verify2fa(
     @Body() verify2faDto: Verify2faDto,
   ): Promise<Verify2faResponseDto> {
     return this.authService.verify2fa(verify2faDto);
   }
 
+  @Post('verify-2fa-login')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  // @SensitiveRateLimit() // 5 attempts per 15 minutes
+  async verify2faLogin(
+    @Body() verify2faDto: Verify2faDto,
+  ): Promise<Verify2faResponseDto> {
+    return this.authService.verify2faLogin(verify2faDto);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  getMe(@Req() req: any) {
-    return {
-      id: req.user.userId,
-      email: req.user.email,
-    };
+  async getMe(
+    @CurrentUser() currentUser: CurrentUser,
+  ): Promise<UserProfileDto> {
+    return this.authService.getUserProfile(currentUser.userId);
   }
 }

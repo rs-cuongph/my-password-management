@@ -8,6 +8,7 @@ interface VaultDashboardProps {
   onEditEntry: (entry: PasswordEntry) => void;
   onDeleteEntry: (entryId: string) => void;
   onCopyPassword: (password: string) => void;
+  isVaultLoaded?: boolean;
 }
 
 type SortField = 'site' | 'updatedAt' | 'createdAt';
@@ -20,6 +21,7 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
   onEditEntry,
   onDeleteEntry,
   // onCopyPassword - handled by CopyButton component
+  isVaultLoaded = true,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('site');
@@ -191,8 +193,12 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
 
           <button
             onClick={onAddEntry}
-            className="btn-primary flex items-center gap-2 animate-slide-up"
+            disabled={!isVaultLoaded}
+            className={`btn-primary flex items-center gap-2 animate-slide-up ${
+              !isVaultLoaded ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             style={{ animationDelay: '0.1s' }}
+            title={!isVaultLoaded ? 'Vault chưa được load' : ''}
           >
             <svg
               className="w-5 h-5"
@@ -333,7 +339,11 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
           {!searchTerm && (
             <button
               onClick={onAddEntry}
-              className="btn-primary flex items-center gap-3 mx-auto"
+              disabled={!isVaultLoaded}
+              className={`btn-primary flex items-center gap-3 mx-auto ${
+                !isVaultLoaded ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              title={!isVaultLoaded ? 'Vault chưa được load' : ''}
             >
               <svg
                 className="w-5 h-5"

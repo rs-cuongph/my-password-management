@@ -64,7 +64,7 @@
       "notLoggedIn": "Not Logged In",
       "unlocked": "Unlocked",
       "locked": "Locked",
-      "autoLockIn": "Auto-lock in {minutes} minutes"
+      "autoLockIn": "Auto-lock in {{minutes}} minutes"
     },
     "actions": {
       "openVault": "Open Password Vault",
@@ -113,5 +113,47 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Information"
+  },
+  "entryForm": {
+    "title": {
+      "add": "Add New Password",
+      "edit": "Edit Password"
+    },
+    "fields": {
+      "site": "Website Name",
+      "sitePlaceholder": "Google, Facebook, GitHub...",
+      "url": "Website URL",
+      "urlPlaceholder": "https://example.com",
+      "username": "Username",
+      "usernamePlaceholder": "email@example.com or username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "hint": "Password Hint",
+      "hintPlaceholder": "Hint to remember password (optional)",
+      "tags": "Tags",
+      "tagsPlaceholder": "Add tag to categorize",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes about this item..."
+    },
+    "validation": {
+      "siteRequired": "Website name is required",
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 4 characters",
+      "urlInvalid": "Invalid URL"
+    },
+    "actions": {
+      "generatePassword": "Generate Strong Password",
+      "addTag": "Add",
+      "cancel": "Cancel",
+      "save": "Save Item",
+      "update": "Update Item"
+    },
+    "buttons": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "copyUsername": "Copy username",
+      "copyPassword": "Copy password"
+    }
   }
 }

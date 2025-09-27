@@ -398,8 +398,8 @@ export class VaultPayloadService {
     if (
       !metadata.version ||
       !metadata.lastSyncAt ||
-      typeof metadata.entryCount !== 'number' ||
-      typeof metadata.boardCount !== 'number'
+      typeof metadata.entriesCount !== 'number' ||
+      typeof metadata.boardsCount !== 'number'
     ) {
       throw new BadRequestException('Invalid payload: incomplete metadata');
     }

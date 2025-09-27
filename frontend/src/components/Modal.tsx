@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { useAccessibility } from '../hooks/useAccessibility';
 import { useAppStore } from '../stores/appStore';
 
@@ -143,20 +144,7 @@ const Modal: React.FC<ModalProps> = ({
               "
               aria-label="Đóng modal"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="h-5 w-5" />
             </button>
           )}
         </div>

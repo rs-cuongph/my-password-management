@@ -6,12 +6,8 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  useAuthStore,
-  isTokenExpired,
-  getTokenExpiration,
-} from '../stores/authStore';
-// import { authApi } from '../services/authService';
+import { useAuthStore, isTokenExpired } from '../stores/authStore';
+import { useMe } from '../services/authService';
 
 interface AuthContextValue {
   // Auth state từ store
@@ -23,7 +19,6 @@ interface AuthContextValue {
   // Enhanced methods
   logout: () => void;
   checkAuthStatus: () => boolean;
-  refreshTokenIfNeeded: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -34,7 +29,6 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
-  const refreshTimerRef = useRef<number | null>(null);
   const checkIntervalRef = useRef<number | null>(null);
 
   const {
@@ -42,18 +36,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     token,
     isAuthenticated,
     isLoading,
-    login,
     logout: storeLogout,
-    setLoading,
   } = useAuthStore();
+
+  // Use getMe API to verify authentication
+  const { data: userData, error: meError, isLoading: isMeLoading } = useMe();
 
   // Enhanced logout với cleanup
   const logout = React.useCallback(() => {
     // Clear all timers
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
     if (checkIntervalRef.current) {
       clearInterval(checkIntervalRef.current);
       checkIntervalRef.current = null;
@@ -66,7 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     navigate({ to: '/login' });
   }, [storeLogout, navigate]);
 
-  // Check auth status
+  // Check auth status with getMe API verification
   const checkAuthStatus = React.useCallback((): boolean => {
     if (!token || isTokenExpired(token)) {
       if (isAuthenticated) {
@@ -74,58 +65,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return false;
     }
+
+    // If we have a valid token but getMe API failed, user is not authenticated
+    if (isAuthenticated && meError && !isMeLoading) {
+      logout();
+      return false;
+    }
+
     return true;
-  }, [token, isAuthenticated, logout]);
-
-  // Refresh token nếu cần
-  const refreshTokenIfNeeded = React.useCallback(async (): Promise<void> => {
-    if (!token || !isAuthenticated) return;
-
-    const expiration = getTokenExpiration(token);
-    if (!expiration) return;
-
-    const now = Date.now();
-    const timeUntilExpiration = expiration - now;
-
-    // Refresh nếu token sẽ hết hạn trong 5 phút
-    if (timeUntilExpiration <= 5 * 60 * 1000) {
-      try {
-        setLoading(true);
-        // For now, just logout if token is expired
-        logout();
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        logout();
-      } finally {
-        setLoading(false);
-      }
-    }
-  }, [token, isAuthenticated, login, logout, setLoading]);
-
-  // Setup token refresh timer
-  const setupRefreshTimer = React.useCallback(() => {
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current);
-    }
-
-    if (!token || !isAuthenticated) return;
-
-    const expiration = getTokenExpiration(token);
-    if (!expiration) return;
-
-    const now = Date.now();
-    const timeUntilExpiration = expiration - now;
-
-    // Refresh 5 phút trước khi hết hạn
-    const refreshTime = Math.max(
-      timeUntilExpiration - 5 * 60 * 1000,
-      60 * 1000
-    );
-
-    refreshTimerRef.current = setTimeout(() => {
-      refreshTokenIfNeeded();
-    }, refreshTime);
-  }, [token, isAuthenticated, refreshTokenIfNeeded]);
+  }, [token, isAuthenticated, meError, isMeLoading, logout]);
 
   // Setup periodic auth check
   const setupAuthCheck = React.useCallback(() => {
@@ -139,17 +87,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, 60 * 1000);
   }, [checkAuthStatus]);
 
+  // Handle getMe API response
+  useEffect(() => {
+    if (userData && isAuthenticated) {
+      // Merge user data with existing kdfSalt if available
+      const { user: currentUser, setUser } = useAuthStore.getState();
+      const userWithKdf = {
+        ...userData,
+        kdfSalt: currentUser?.kdfSalt || userData.kdfSalt,
+      };
+      setUser(userWithKdf);
+    }
+  }, [userData, isAuthenticated]);
+
   // Initialize timers khi auth state thay đổi
   useEffect(() => {
     if (isAuthenticated && token) {
-      setupRefreshTimer();
       setupAuthCheck();
     } else {
       // Clear timers khi không authenticated
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
         checkIntervalRef.current = null;
@@ -157,14 +113,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
       }
     };
-  }, [isAuthenticated, token, setupRefreshTimer, setupAuthCheck]);
+  }, [isAuthenticated, token, setupAuthCheck]);
 
   // Check auth status on mount
   useEffect(() => {
@@ -175,9 +128,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Setup timers for valid token
     if (isAuthenticated && token) {
-      setupRefreshTimer();
       setupAuthCheck();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Listen for storage events (multiple tabs)
@@ -204,23 +157,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!document.hidden && isAuthenticated) {
         // Page became visible, check auth status
         checkAuthStatus();
-        refreshTokenIfNeeded();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () =>
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isAuthenticated, checkAuthStatus, refreshTokenIfNeeded]);
+  }, [isAuthenticated, checkAuthStatus]);
 
   const value: AuthContextValue = {
     user,
     token,
     isAuthenticated,
-    isLoading,
+    isLoading: isLoading || isMeLoading,
     logout,
     checkAuthStatus,
-    refreshTokenIfNeeded,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

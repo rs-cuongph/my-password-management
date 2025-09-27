@@ -64,7 +64,7 @@
       "notLoggedIn": "Chưa đăng nhập",
       "unlocked": "Đã mở khóa",
       "locked": "Đã khóa",
-      "autoLockIn": "Tự động khóa sau {minutes} phút"
+      "autoLockIn": "Tự động khóa sau {{minutes}} phút"
     },
     "actions": {
       "openVault": "Mở Password Vault",
@@ -113,5 +113,47 @@
     "success": "Thành công",
     "warning": "Cảnh báo",
     "info": "Thông tin"
+  },
+  "entryForm": {
+    "title": {
+      "add": "Thêm mật khẩu mới",
+      "edit": "Chỉnh sửa mật khẩu"
+    },
+    "fields": {
+      "site": "Tên trang web",
+      "sitePlaceholder": "Google, Facebook, GitHub...",
+      "url": "URL trang web",
+      "urlPlaceholder": "https://example.com",
+      "username": "Tài khoản",
+      "usernamePlaceholder": "email@example.com hoặc tên đăng nhập",
+      "password": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "hint": "Gợi ý mật khẩu",
+      "hintPlaceholder": "Gợi ý để nhớ mật khẩu (không bắt buộc)",
+      "tags": "Tags",
+      "tagsPlaceholder": "Thêm tag để phân loại",
+      "notes": "Ghi chú",
+      "notesPlaceholder": "Ghi chú thêm về mục này..."
+    },
+    "validation": {
+      "siteRequired": "Tên trang web là bắt buộc",
+      "usernameRequired": "Tài khoản là bắt buộc",
+      "passwordRequired": "Mật khẩu là bắt buộc",
+      "passwordMinLength": "Mật khẩu phải có ít nhất 4 ký tự",
+      "urlInvalid": "URL không hợp lệ"
+    },
+    "actions": {
+      "generatePassword": "Tạo mật khẩu mạnh",
+      "addTag": "Thêm",
+      "cancel": "Hủy bỏ",
+      "save": "Thêm mục mới",
+      "update": "Cập nhật mục"
+    },
+    "buttons": {
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "copyUsername": "Sao chép tài khoản",
+      "copyPassword": "Sao chép mật khẩu"
+    }
   }
 }

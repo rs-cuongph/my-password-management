@@ -7,19 +7,15 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
-  Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-  ApiQuery,
-} from '@nestjs/swagger';
-import type { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RateLimit } from '../../common/decorators/rate-limit.decorator';
+import {
+  CurrentUser,
+  CurrentUser as CurrentUserType,
+} from '../../auth/decorators/current-user.decorator';
+// import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import {
   GetVaultResponseDto,
   SaveVaultRequestDto,
@@ -30,112 +26,63 @@ import {
 } from '../dto/vault.dto';
 import { VaultService } from '../services/vault.service';
 
-@ApiTags('Vault')
+/**
+ * VaultController - Main vault management operations
+ *
+ * This controller handles the primary vault operations for users:
+ * - GET /vault - Load user's vault from database
+ * - POST /vault - Save user's vault to database
+ * - GET /vault/version - Check version conflicts
+ *
+ * For encryption/decryption operations, use VaultPayloadController.
+ */
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class VaultController {
   constructor(private readonly vaultService: VaultService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get encrypted vault data',
-    description:
-      'Retrieve encrypted vault data including KDF parameters, wrapped DEK, and encrypted blob',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault data retrieved successfully',
-    type: GetVaultResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Vault not found for user',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - invalid JWT token',
-  })
-  @RateLimit(30, 60000) // 30 requests per minute
-  async getVault(@Req() req: Request): Promise<GetVaultResponseDto> {
-    const userId = req.user?.['sub'];
-    if (!userId) {
-      throw new HttpException(
-        'User not found in token',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
+  // @RateLimit(30, 60000) // 30 requests per minute
+  async getVault(
+    @CurrentUser() user: CurrentUserType,
+  ): Promise<GetVaultResponseDto> {
     try {
-      const vault = await this.vaultService.getVaultByUserId(userId);
+      const vault = await this.vaultService.getVaultByUserId(
+        user.userId.toString(),
+      );
       if (!vault) {
-        throw new HttpException('Vault not found', HttpStatus.NOT_FOUND);
+        throw new HttpException('Vault not found', HttpStatus.NO_CONTENT);
       }
 
       return vault;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        'Failed to retrieve vault',
+        `Failed to retrieve vault: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   @Post()
-  @ApiOperation({
-    summary: 'Save encrypted vault data',
-    description: 'Save encrypted vault data with version conflict detection',
-  })
-  @ApiBody({
-    type: SaveVaultRequestDto,
-    description: 'Vault data to save with KDF parameters and encrypted content',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault saved successfully',
-    type: SaveVaultResponseDto,
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Version conflict detected',
-    type: VaultVersionConflictDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid vault data or validation failed',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - invalid JWT token',
-  })
-  @ApiResponse({
-    status: 413,
-    description: 'Vault data too large',
-  })
-  @RateLimit(10, 60000) // 10 requests per minute
+  // @RateLimit(10, 60000) // 10 requests per minute
   async saveVault(
-    @Req() req: Request,
+    @CurrentUser() user: CurrentUserType,
     @Body() saveVaultDto: SaveVaultRequestDto,
   ): Promise<SaveVaultResponseDto> {
-    const userId = req.user?.['sub'];
-    if (!userId) {
-      throw new HttpException(
-        'User not found in token',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
     try {
       // Validate vault size limits
-      await this.vaultService.validateVaultSize(saveVaultDto);
+      this.vaultService.validateVaultSize(saveVaultDto);
 
       // Check for version conflicts if expectedVersion is provided
       if (saveVaultDto.expectedVersion !== undefined) {
-        const currentVersion =
-          await this.vaultService.getCurrentVersion(userId);
+        const currentVersion = await this.vaultService.getCurrentVersion(
+          user.userId.toString(),
+        );
         if (
           currentVersion !== saveVaultDto.expectedVersion &&
           !saveVaultDto.force
@@ -151,22 +98,27 @@ export class VaultController {
         }
       }
 
-      const result = await this.vaultService.saveVault(userId, saveVaultDto);
+      const result = await this.vaultService.saveVault(
+        user.userId.toString(),
+        saveVaultDto,
+      );
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
 
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
       // Handle specific error types
-      if (error.message?.includes('too large')) {
+      if (message.includes('too large')) {
         throw new HttpException(
           'Vault data exceeds size limit',
           HttpStatus.PAYLOAD_TOO_LARGE,
         );
       }
 
-      if (error.message?.includes('validation')) {
+      if (message.includes('validation')) {
         throw new HttpException(
           'Invalid vault data format',
           HttpStatus.BAD_REQUEST,
@@ -174,51 +126,22 @@ export class VaultController {
       }
 
       throw new HttpException(
-        'Failed to save vault',
+        `Failed to save vault: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   @Get('version')
-  @ApiOperation({
-    summary: 'Check vault version',
-    description: 'Check current vault version for conflict detection',
-  })
-  @ApiQuery({
-    name: 'clientVersion',
-    type: Number,
-    required: false,
-    description: 'Client version to check against',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Version check completed',
-    type: CheckVaultVersionResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Vault not found for user',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - invalid JWT token',
-  })
-  @RateLimit(60, 30000) // 60 requests per 30 seconds
+  // @RateLimit(60, 30000) // 60 requests per 30 seconds
   async checkVaultVersion(
-    @Req() req: Request,
+    @CurrentUser() user: CurrentUserType,
     @Query() query: CheckVaultVersionRequestDto,
   ): Promise<CheckVaultVersionResponseDto> {
-    const userId = req.user?.['sub'];
-    if (!userId) {
-      throw new HttpException(
-        'User not found in token',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
     try {
-      const currentVersion = await this.vaultService.getCurrentVersion(userId);
+      const currentVersion = await this.vaultService.getCurrentVersion(
+        user.userId.toString(),
+      );
       if (currentVersion === -1) {
         throw new HttpException('Vault not found', HttpStatus.NOT_FOUND);
       }
@@ -232,7 +155,9 @@ export class VaultController {
           ? currentVersion - query.clientVersion
           : undefined;
 
-      const lastUpdated = await this.vaultService.getLastUpdated(userId);
+      const lastUpdated = await this.vaultService.getLastUpdated(
+        user.userId.toString(),
+      );
 
       return {
         currentVersion,
@@ -240,12 +165,13 @@ export class VaultController {
         lastUpdated: lastUpdated?.toISOString(),
         versionDifference,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
+      const message = error instanceof Error ? error.message : 'Unknown error';
       throw new HttpException(
-        'Failed to check vault version',
+        `Failed to check vault version: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

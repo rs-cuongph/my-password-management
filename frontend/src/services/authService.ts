@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from './api';
 import { useAuthStore } from '../stores/authStore';
+import { useMasterPasswordStore } from '../stores/masterPasswordStore';
 import type {
   LoginInput,
   RegisterApiInput,
-  UserProfileInput,
   TOTPSetupInput,
   TOTPVerificationInput,
 } from '../schemas/auth';
-import type { User, ApiResponse } from '../types';
+import type { User } from '../types';
 
 // Query keys
 export const authKeys = {
@@ -20,7 +20,8 @@ export const authKeys = {
 // Types
 interface LoginResponse {
   success: boolean;
-  tempToken?: string;
+  tempToken?: string; // For 2FA verification
+  accessToken?: string; // For direct login (no 2FA)
   need2fa: boolean;
   kdfSalt: string;
   message?: string;
@@ -53,14 +54,7 @@ const authApi = {
   register: (data: RegisterApiInput): Promise<RegisterResponse> =>
     apiService.post('/auth/register', data),
 
-  logout: (): Promise<{ message: string }> => apiService.post('/auth/logout'),
-
   getMe: (): Promise<User> => apiService.get('/auth/me'),
-
-  updateProfile: (data: UserProfileInput): Promise<User> =>
-    apiService.put('/auth/profile', data),
-
-  refreshToken: (): Promise<LoginResponse> => apiService.post('/auth/refresh'),
 
   setupTOTP: (data: TOTPSetupInput): Promise<TOTPSetupResponse> =>
     apiService.post('/auth/setup-2fa', data),
@@ -75,48 +69,47 @@ const authApi = {
 export const useLogin = () => {
   const queryClient = useQueryClient();
   const { login } = useAuthStore();
+  const { clear } = useMasterPasswordStore();
 
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: async (response) => {
-      const { success, tempToken, kdfSalt, need2fa } = response;
+      const { success, tempToken, accessToken, kdfSalt, need2fa } = response;
 
-      if (success && tempToken) {
+      if (success) {
+        // Clear master password store for fresh login
+        clear();
+
         // Store kdfSalt in sessionStorage for master password page
         sessionStorage.setItem('kdfSalt', kdfSalt);
 
-        // Store tempToken in localStorage for API calls
-        localStorage.setItem('token', tempToken);
+        if (accessToken) {
+          // Direct login without 2FA
+          localStorage.setItem('token', accessToken);
 
-        if (need2fa) {
+          // Create temporary user object with kdfSalt
+          const tempUser = {
+            id: '',
+            email: '',
+            name: '',
+            createdAt: '',
+            updatedAt: '',
+            kdfSalt,
+          };
+          login(tempUser, accessToken);
+
+          // Invalidate and refetch user queries (useMe will be called by AuthContext)
+          queryClient.invalidateQueries({ queryKey: authKeys.all });
+
+          // ProtectedRoute will automatically redirect to master-password page
+        } else if (tempToken && need2fa) {
+          // 2FA required - store tempToken and redirect to TOTP verification
+          localStorage.setItem('token', tempToken);
+
           // Redirect to TOTP verification page
           setTimeout(() => {
             window.location.href = '/totp-verification';
           }, 100);
-        } else {
-          // Get user info and complete login
-          try {
-            const user = await authApi.getMe();
-            const userWithKdf = { ...user, kdfSalt };
-            login(userWithKdf, tempToken);
-
-            // Set user data in cache
-            queryClient.setQueryData(authKeys.me(), userWithKdf);
-
-            // Invalidate and refetch user queries
-            queryClient.invalidateQueries({ queryKey: authKeys.all });
-
-            // Redirect to master password page after successful login
-            setTimeout(() => {
-              window.location.href = '/master-password';
-            }, 100);
-          } catch (error) {
-            console.error('Failed to get user info:', error);
-            // Still redirect to master password page with kdfSalt
-            setTimeout(() => {
-              window.location.href = '/master-password';
-            }, 100);
-          }
         }
       }
     },
@@ -131,29 +124,6 @@ export const useRegister = () => {
     mutationFn: authApi.register,
     onError: (error) => {
       console.error('Registration failed:', error);
-    },
-  });
-};
-
-export const useLogout = () => {
-  const queryClient = useQueryClient();
-  const { logout } = useAuthStore();
-
-  return useMutation({
-    mutationFn: authApi.logout,
-    onSuccess: () => {
-      logout();
-
-      // Clear all cached data
-      queryClient.clear();
-
-      // Redirect to login page
-      window.location.href = '/login';
-    },
-    onSettled: () => {
-      // Always logout locally, even if API call fails
-      logout();
-      queryClient.clear();
     },
   });
 };
@@ -176,50 +146,6 @@ export const useMe = () => {
   });
 };
 
-export const useUpdateProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: authApi.updateProfile,
-    onSuccess: (response) => {
-      const updatedUser = response;
-
-      // Update user in auth store
-      const { setUser } = useAuthStore.getState();
-      setUser(updatedUser);
-
-      // Update cached user data
-      queryClient.setQueryData(authKeys.me(), updatedUser);
-
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: authKeys.profile() });
-    },
-  });
-};
-
-export const useRefreshToken = () => {
-  const queryClient = useQueryClient();
-  const { setToken } = useAuthStore();
-
-  return useMutation({
-    mutationFn: () => authApi.refreshToken(),
-    onSuccess: (response) => {
-      const { tempToken } = response;
-      setToken(tempToken || '');
-
-      // Invalidate all queries to refetch with new token
-      queryClient.invalidateQueries();
-    },
-    onError: () => {
-      // If refresh fails, logout user
-      const { logout } = useAuthStore.getState();
-      logout();
-      queryClient.clear();
-      window.location.href = '/login';
-    },
-  });
-};
-
 export const useSetupTOTP = () => {
   return useMutation({
     mutationFn: authApi.setupTOTP,
@@ -232,30 +158,40 @@ export const useSetupTOTP = () => {
 export const useVerifyTOTP = () => {
   const queryClient = useQueryClient();
   const { login } = useAuthStore();
+  const { clear } = useMasterPasswordStore();
 
   return useMutation({
     mutationFn: authApi.verifyTOTP,
     onSuccess: async (response) => {
       if (response.success && response.accessToken) {
+        // Clear master password store for fresh login
+        clear();
+
         const { accessToken, kdfSalt } = response;
+
+        // Store accessToken in localStorage
+        localStorage.setItem('token', accessToken);
 
         // Store kdfSalt in sessionStorage for master password page
         if (kdfSalt) {
           sessionStorage.setItem('kdfSalt', kdfSalt);
         }
 
-        // Get user from store or make API call to get user info
-        const { user } = useAuthStore.getState();
-        if (user) {
-          const userWithSalt = { ...user, kdfSalt };
-          login(userWithSalt, accessToken);
-          queryClient.invalidateQueries({ queryKey: authKeys.all });
+        // Create temporary user object with kdfSalt
+        const tempUser = {
+          id: '',
+          email: '',
+          name: '',
+          createdAt: '',
+          updatedAt: '',
+          kdfSalt: kdfSalt || '',
+        };
+        login(tempUser, accessToken);
 
-          // Redirect to master password page
-          setTimeout(() => {
-            window.location.href = '/master-password';
-          }, 100);
-        }
+        // Invalidate and refetch user queries (useMe will be called by AuthContext)
+        queryClient.invalidateQueries({ queryKey: authKeys.all });
+
+        // ProtectedRoute will automatically redirect to master-password page
       }
     },
     onError: (error) => {

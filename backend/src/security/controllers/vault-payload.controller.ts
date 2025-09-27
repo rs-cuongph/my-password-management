@@ -5,20 +5,14 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  UseInterceptors,
   UsePipes,
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+// import { Throttle } from '@nestjs/throttler';
 import { VaultPayloadService } from '../services/vault-payload.service';
+import { WrappedDEK } from '../interfaces/dek.interface';
 import {
   EncryptVaultPayloadRequestDto,
   EncryptVaultPayloadResponseDto,
@@ -32,31 +26,26 @@ import {
   GetVaultStatsResponseDto,
 } from '../dto/vault-payload.dto';
 
-@ApiTags('Vault Payload Encryption')
-@Controller('api/v1/security/vault-payload')
-@UseGuards(/* JwtAuthGuard */) // TODO: Add proper auth guard
-@ApiBearerAuth()
+/**
+ * VaultPayloadController - Advanced encryption operations
+ *
+ * This controller provides advanced encryption/decryption operations for vault payloads.
+ * It's designed for internal use and advanced crypto operations like:
+ * - Password-based encryption/decryption
+ * - Key rotation (re-encryption)
+ * - Encryption statistics
+ *
+ * For basic vault operations, use VaultController instead.
+ */
+@Controller('security/vault-payload')
+@UseGuards(JwtAuthGuard) // Added authentication
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class VaultPayloadController {
   constructor(private readonly vaultPayloadService: VaultPayloadService) {}
 
   @Post('encrypt')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
-  @ApiOperation({
-    summary: 'Encrypt vault payload with DEK',
-    description:
-      'Encrypts a vault payload using XChaCha20-Poly1305 with the provided DEK. Supports optional compression.',
-  })
-  @ApiBody({ type: EncryptVaultPayloadRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault payload encrypted successfully',
-    type: EncryptVaultPayloadResponseDto,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid request parameters' })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  // @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   async encryptPayload(
     @Body() request: EncryptVaultPayloadRequestDto,
   ): Promise<EncryptVaultPayloadResponseDto> {
@@ -103,34 +92,19 @@ export class VaultPayloadController {
           originalSize: Buffer.from(JSON.stringify(payload)).length,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Encryption failed: ${error.message}`);
+      throw new BadRequestException(
+        `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
   @Post('decrypt')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 15, ttl: 60000 } }) // 15 requests per minute
-  @ApiOperation({
-    summary: 'Decrypt vault payload with DEK',
-    description:
-      'Decrypts a vault payload using XChaCha20-Poly1305 with the provided DEK. Handles decompression if needed.',
-  })
-  @ApiBody({ type: DecryptVaultPayloadRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault payload decrypted successfully',
-    type: DecryptVaultPayloadResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid request parameters or decryption failed',
-  })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  // @Throttle({ default: { limit: 15, ttl: 60000 } }) // 15 requests per minute
   async decryptPayload(
     @Body() request: DecryptVaultPayloadRequestDto,
   ): Promise<DecryptVaultPayloadResponseDto> {
@@ -151,36 +125,26 @@ export class VaultPayloadController {
       );
 
       return {
-        payload: result.payload,
-        compressionRatio: result.compressionRatio,
-        decryptionTime: result.decryptionTime,
-        warnings: result.warnings,
+        payload: result.payload as any, // Type assertion for DTO compatibility
+        stats: {
+          decryptionTime: result.decryptionTime,
+          compressionRatio: result.compressionRatio,
+          warnings: result.warnings,
+        },
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Decryption failed: ${error.message}`);
+      throw new BadRequestException(
+        `Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
   @Post('encrypt-with-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes (more restrictive for password operations)
-  @ApiOperation({
-    summary: 'Encrypt vault payload with password',
-    description:
-      'Encrypts a vault payload using a password. Generates a new DEK, wraps it with a key derived from the password, and encrypts the payload.',
-  })
-  @ApiBody({ type: EncryptVaultWithPasswordRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault payload encrypted with password successfully',
-    type: EncryptVaultWithPasswordResponseDto,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid request parameters' })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  // @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes (more restrictive for password operations)
   async encryptVaultWithPassword(
     @Body() request: EncryptVaultWithPasswordRequestDto,
   ): Promise<EncryptVaultWithPasswordResponseDto> {
@@ -193,6 +157,12 @@ export class VaultPayloadController {
         entries: request.payload.entries.map((entry) => ({
           ...entry,
           dueDate: entry.dueDate ? new Date(entry.dueDate) : undefined,
+          createdAt: new Date(entry.createdAt),
+          updatedAt: new Date(entry.updatedAt),
+        })),
+        passwordEntries: request.payload.passwordEntries?.map((entry) => ({
+          ...entry,
+          lastUsed: entry.lastUsed ? new Date(entry.lastUsed) : undefined,
           createdAt: new Date(entry.createdAt),
           updatedAt: new Date(entry.updatedAt),
         })),
@@ -223,7 +193,7 @@ export class VaultPayloadController {
 
       return {
         encryptedPayload: result.encryptedPayload,
-        wrappedDEK: result.wrappedDEK,
+        wrappedDEK: JSON.stringify(result.wrappedDEK),
         stats: {
           ...stats,
           encryptionTime,
@@ -235,31 +205,14 @@ export class VaultPayloadController {
         throw error;
       }
       throw new BadRequestException(
-        `Password encryption failed: ${error.message}`,
+        `Password encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
 
   @Post('decrypt-with-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 requests per 5 minutes
-  @ApiOperation({
-    summary: 'Decrypt vault payload with password',
-    description:
-      'Decrypts a vault payload using a password. Derives the master key from the password, unwraps the DEK, and decrypts the payload.',
-  })
-  @ApiBody({ type: DecryptVaultWithPasswordRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault payload decrypted with password successfully',
-    type: DecryptVaultPayloadResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid request parameters or decryption failed',
-  })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  // @Throttle({ default: { limit: 10, ttl: 300000 } }) // 10 requests per 5 minutes
   async decryptVaultWithPassword(
     @Body() request: DecryptVaultWithPasswordRequestDto,
   ): Promise<DecryptVaultPayloadResponseDto> {
@@ -273,47 +226,36 @@ export class VaultPayloadController {
         createdAt: new Date(request.encryptedPayload.createdAt),
       };
 
+      const wrappedDEK = JSON.parse(request.wrappedDEK) as WrappedDEK; // Parse and cast WrappedDEK
       const result = await this.vaultPayloadService.decryptVaultWithPassword(
         encryptedPayload,
-        request.wrappedDEK,
+        wrappedDEK, // WrappedDEK from JSON parse
         request.password,
         salt,
         request.options || {},
       );
 
       return {
-        payload: result.payload,
-        compressionRatio: result.compressionRatio,
-        decryptionTime: result.decryptionTime,
-        warnings: result.warnings,
+        payload: result.payload as any, // Type assertion to match DTO
+        stats: {
+          decryptionTime: result.decryptionTime,
+          compressionRatio: result.compressionRatio,
+          warnings: result.warnings,
+        },
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException(
-        `Password decryption failed: ${error.message}`,
+        `Password decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
 
   @Post('reencrypt')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes (key rotation is sensitive)
-  @ApiOperation({
-    summary: 'Re-encrypt vault payload with new DEK',
-    description:
-      'Re-encrypts a vault payload with a new DEK for key rotation. Decrypts with old DEK and encrypts with new DEK.',
-  })
-  @ApiBody({ type: ReencryptVaultPayloadRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault payload re-encrypted successfully',
-    type: EncryptVaultPayloadResponseDto,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid request parameters' })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  // @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes (key rotation is sensitive)
   async reencryptPayload(
     @Body() request: ReencryptVaultPayloadRequestDto,
   ): Promise<EncryptVaultPayloadResponseDto> {
@@ -354,29 +296,18 @@ export class VaultPayloadController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Re-encryption failed: ${error.message}`);
+      throw new BadRequestException(
+        `Re-encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
   @Post('stats')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 50, ttl: 60000 } }) // 50 requests per minute (read-only operation)
-  @ApiOperation({
-    summary: 'Get vault encryption statistics',
-    description:
-      'Returns statistics about an encrypted vault payload without decrypting it.',
-  })
-  @ApiBody({ type: GetVaultStatsRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Vault statistics retrieved successfully',
-    type: GetVaultStatsResponseDto,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid request parameters' })
-  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-  async getVaultStats(
+  // @Throttle({ default: { limit: 50, ttl: 60000 } }) // 50 requests per minute (read-only operation)
+  getVaultStats(
     @Body() request: GetVaultStatsRequestDto,
-  ): Promise<GetVaultStatsResponseDto> {
+  ): GetVaultStatsResponseDto {
     try {
       // Convert DTO to service interface
       const encryptedPayload = {
@@ -399,7 +330,7 @@ export class VaultPayloadController {
       return { stats };
     } catch (error) {
       throw new BadRequestException(
-        `Failed to get vault statistics: ${error.message}`,
+        `Failed to get vault statistics: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
