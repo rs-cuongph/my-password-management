@@ -4,8 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import _sodium from 'libsodium-wrappers';
-import * as crypto from 'crypto';
+import * as _sodium from 'libsodium-wrappers';
 import {
   IDEKService,
   DEKResult,
@@ -26,15 +25,44 @@ export class DEKService implements IDEKService {
   private readonly CURRENT_VERSION = 1;
 
   constructor(private configService: ConfigService) {
-    this.initializeSodium();
+    // Note: initializeSodium is called asynchronously in ensureSodiumReady
   }
 
   private async initializeSodium(): Promise<void> {
     try {
+      // Wait for libsodium to be fully ready
       await _sodium.ready;
+
+      // Verify all required functions are available
+      const requiredFunctions = [
+        'randombytes_buf',
+        'crypto_aead_xchacha20poly1305_ietf_encrypt',
+        'crypto_aead_xchacha20poly1305_ietf_decrypt',
+        'crypto_pwhash',
+        'crypto_pwhash_SALTBYTES',
+      ];
+
+      for (const func of requiredFunctions) {
+        if (!_sodium[func] || typeof _sodium[func] !== 'function') {
+          throw new Error(`libsodium function ${func} not available`);
+        }
+      }
+
+      // Verify constants are available
+      if (
+        typeof _sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE === 'undefined' ||
+        typeof _sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE === 'undefined' ||
+        typeof _sodium.crypto_pwhash_ALG_ARGON2ID13 === 'undefined'
+      ) {
+        throw new Error('libsodium constants not available');
+      }
+
       this.sodium = _sodium;
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to initialize libsodium');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to initialize libsodium: ${message}`,
+      );
     }
   }
 

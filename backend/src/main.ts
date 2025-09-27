@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import helmet from 'helmet';
+// import helmet from 'helmet';
 import cors from 'cors';
 import { SecurityService } from './security/security.service';
 import { SecurityExceptionFilter } from './common/filters/security-exception.filter';
@@ -29,6 +29,5 @@ async function bootstrap() {
   console.log(
     `🚀 Application is running on: http://localhost:${port}/${apiPrefix}/${apiVersion}`,
   );
-  console.log(`🔒 Security middleware enabled`);
 }
 void bootstrap();

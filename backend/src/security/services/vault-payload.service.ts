@@ -4,20 +4,17 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import _sodium from 'libsodium-wrappers';
+import * as _sodium from 'libsodium-wrappers';
 import * as zlib from 'zlib';
 import { promisify } from 'util';
 import { DEKService } from './dek.service';
 import { WrappedDEK, DEKResult } from '../interfaces/dek.interface';
 import {
-  VaultEntry,
-  VaultBoard,
   VaultPayload,
   EncryptedVaultPayload,
   VaultDecryptionResult,
   VaultEncryptionOptions,
   VaultDecryptionOptions,
-  VaultEncryptionResult,
   VaultEncryptionStats,
 } from '../interfaces/vault-payload.interface';
 
@@ -37,16 +34,32 @@ export class VaultPayloadService {
   constructor(
     private dekService: DEKService,
     private configService: ConfigService,
-  ) {
-    this.initializeSodium();
-  }
+  ) {}
 
   private async initializeSodium(): Promise<void> {
     try {
+      // Wait for libsodium to be fully ready
       await _sodium.ready;
+
+      // Verify required functions are available
+      const requiredFunctions = [
+        'randombytes_buf',
+        'crypto_aead_xchacha20poly1305_ietf_encrypt',
+        'crypto_aead_xchacha20poly1305_ietf_decrypt',
+      ];
+
+      for (const func of requiredFunctions) {
+        if (!_sodium[func] || typeof _sodium[func] !== 'function') {
+          throw new Error(`libsodium function ${func} not available`);
+        }
+      }
+
       this.sodium = _sodium;
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to initialize libsodium');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        `Failed to initialize libsodium: ${message}`,
+      );
     }
   }
 
@@ -124,10 +137,7 @@ export class VaultPayloadService {
         version: this.CURRENT_VERSION,
         createdAt: new Date(),
       };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
+    } catch (error: any) {
       throw new InternalServerErrorException(
         `Failed to encrypt vault payload: ${error.message}`,
       );

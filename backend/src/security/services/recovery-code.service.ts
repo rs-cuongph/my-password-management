@@ -21,12 +21,38 @@ export class RecoveryCodeService {
   private static readonly CURRENT_VERSION = 1;
 
   constructor(private readonly configService: ConfigService) {
-    this.initializeSodium();
+    // Note: initializeSodium is called asynchronously in ensureSodiumReady
   }
 
   private async initializeSodium(): Promise<void> {
     try {
+      // Wait for libsodium to be fully ready
       await sodium.ready;
+
+      // Verify required functions are available
+      const requiredFunctions = [
+        'randombytes_buf',
+        'crypto_aead_xchacha20poly1305_ietf_encrypt',
+        'crypto_aead_xchacha20poly1305_ietf_decrypt',
+        'crypto_pwhash',
+        'memzero',
+      ];
+
+      for (const func of requiredFunctions) {
+        if (!sodium[func] || typeof sodium[func] !== 'function') {
+          throw new Error(`libsodium function ${func} not available`);
+        }
+      }
+
+      // Verify constants are available
+      if (
+        typeof sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE === 'undefined' ||
+        typeof sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE === 'undefined' ||
+        typeof sodium.crypto_pwhash_ALG_ARGON2ID13 === 'undefined'
+      ) {
+        throw new Error('libsodium constants not available');
+      }
+
       this.sodium = sodium;
       this.logger.log('Sodium library initialized for recovery codes');
     } catch (error) {
